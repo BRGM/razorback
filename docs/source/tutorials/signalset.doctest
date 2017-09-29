@@ -1,0 +1,418 @@
+
+=========================
+Handling time-series data
+=========================
+
+Before processing any data, we need to handle all data we have: select specific subsets of these data and gather them.
+In practice, time data come with multiple sampling rates and time intervals.
+Data of one channel can be split in multiple files.
+
+Razorback provides tools to help in the task of isolating and grouping the data of interest.
+See the :mod:`.signalset` module for the detailled documentation.
+
+
+Setting up
+==========
+
+>>> from __future__ import print_function  # for python 2 compatibility
+
+First we import razorback:
+
+>>> import razorback as rb
+
+Usualy, data are read from files, in which case the :mod:`.io` module is here to help.
+But for this tutorial, we will work with fake signals. The following (generator) function will build them:
+
+>>> import numpy as np
+>>> def build_fake_signals(infos):
+...     """ yield some fake signal sets
+...     
+...     Each signal set contains 5 channels (Ex, Ey, Hx, Hy, Hz)
+...     for one run at one site, at a given sampling rate and given time interval.
+...     
+...     The raw data of the signals are 'empty' arrays.
+...     """
+...     tags_tpl = {'Ex_%s': 0, 'Ey_%s': 1, 'Hx_%s': 2, 'Hy_%s': 3, 'Hz_%s': 4,
+...                 'E_%s': (0, 1), 'H_%s': (2, 3, 4), 'site_%s': (0, 1, 2, 3, 4)}
+... 
+...     for site_id, rate, start, stop in infos:
+...         tags = {k % site_id: v for k, v in tags_tpl.items()}
+...         size = int((stop-start) * rate) + 1
+...         raw_data = np.empty((5, size))
+...         signals = rb.SyncSignal(raw_data, rate, start)
+...         yield rb.SignalSet(tags, signals)
+
+
+We consider a toy situation where we have recorded MT signals (Ex, Ey, Hx, Hy, Hz) on 5 sites (1, 2, 3, 4, 5), some with several runs and different sampling rates.
+The situation could be pictured by::
+
+  ==== ======================================
+  site   time
+  ==== ======================================
+    1            ~~~~~~~~              
+    2    ~~~~~~   ~~~~~~      ^^^^^^^  
+    3     ~~~~~~~~~~~~~~~~~  ^^^^^^^^^^
+    4    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    5    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ==== ======================================
+
+  ~~~~~ : continuous run sampled at 512 Hz
+  ^^^^^ : continuous run sampled at 1024 Hz
+
+We use our ``build_fake_signals()`` function to generate the signals and store the 8 signals in the ``all_signals`` list:
+
+>>> infos = [
+...     # (site, sampling_rate, start_time, end_time)
+...     (     1,           512,        110,      250),
+...     (     2,           512,          0,      100),
+...     (     2,           512,        120,      220),
+...     (     2,          1024,        400,      450),
+...     (     3,           512,         10,      300),
+...     (     3,          1024,        350,      500),
+...     (     4,           512,          5,      530),
+...     (     5,          1024,          0,      550),
+... ]
+>>> all_signals = list(build_fake_signals(infos))
+
+We pick the four first signals that correspond to site 1 and 2 for further investigations:
+
+>>> signal_1, signal_2a, signal_2b, signal_2c = all_signals[:4]
+
+
+Inspecting a signal set
+=======================
+
+We can print ``signal_1`` to get a summary of what we know about it:
+
+>>> print(signal_1)
+SignalSet: 5 channels, 1 run
+tags: {'Ex_1': (0,), 'Ey_1': (1,), 'Hx_1': (2,), 
+       'Hy_1': (3,), 'Hz_1': (4,), 'E_1': (0, 1), 
+       'H_1': (2, 3, 4), 'site_1': (0, 1, 2, 3, 4)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:01:50  1970-01-01 00:04:10
+----------  -------------------  -------------------
+
+This is a :class:`.SignalSet` object that contains the records of 5 channels on 1 run.
+Next we see the *tags* as a dictionnary, then some data about the run.
+
+
+The tags are stored in a :class:`.Tags` object accessible by:
+
+>>> signal_1.tags
+Tags(5, Ex_1=(0,), Ey_1=(1,), Hx_1=(2,), Hy_1=(3,), Hz_1=(4,), E_1=(0, 1), H_1=(2, 3, 4), site_1=(0, 1, 2, 3, 4))
+
+The tags allows accessing to specific channels by using name identifiers.
+For instance, ``'Ex_1'`` and ``'Ey_1'`` correspond to indices 0 and 1.
+The tags also exposes names for groups of indices, like ``'E_1'`` here that corresponds to the group (0, 1) i.e. the both channels ``'Ex_1'`` and ``'Ey_1'``.
+
+Then we see the run: its sampling rate, its start time and its stop time.
+The run itself is accessible by:
+
+>>> signal_1.signals
+(SyncSignal([5x71681], sampling_rate=5.1e+02, start=1.1e+02, calibrations=[...]),)
+
+Actualy, we get a tuple because a :class:`.SignalSet` object can handle multiple runs.
+A more detailled view is given by:
+
+>>> print(signal_1.signals[0])
+SyncSignal
+  - nb of channels :   5
+  - signal size    :   71681
+  - sampling rate  :   512.0 Hz
+  - start          :   1970-01-01 00:01:50
+  - stop           :   1970-01-01 00:04:10
+
+This is a :class:`.SyncSignal` object that contains 5 channels, sampled at 512 Hz.
+:class:`.SyncSignal` objects are a light wrapper around the raw data of a bunch of synchronous signals.
+Here, *synchronous* means that all signals start and stop at the same time and have the same sampling rate.
+Note that the channels of a :class:`.SyncSignal` object are only identified by their indices not by *tags*.
+
+
+We can access to all the informations of a signal set through its attribute:
+
+>>> print(signal_1.nb_channels)
+5
+>>> print(signal_1.nb_runs)
+1
+>>> print(signal_1.sampling_rates)
+[ 512.]
+>>> print(signal_1.intervals)
+[[ 110.  250.]]
+>>> print(signal_1.sizes)
+[71681]
+
+
+Joining successive runs
+=======================
+
+``signal_2a``, ``signal_2b`` and ``signal_2c`` are records of 3 different runs on the site 2.
+
+>>> print(signal_2a)
+SignalSet: 5 channels, 1 run
+tags: {'Ex_2': (0,), 'Ey_2': (1,), 'Hx_2': (2,), 
+       'Hy_2': (3,), 'Hz_2': (4,), 'E_2': (0, 1), 
+       'H_2': (2, 3, 4), 'site_2': (0, 1, 2, 3, 4)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:00  1970-01-01 00:01:40
+----------  -------------------  -------------------
+>>> print(signal_2b)
+SignalSet: 5 channels, 1 run
+tags: {'Ex_2': (0,), 'Ey_2': (1,), 'Hx_2': (2,), 
+       'Hy_2': (3,), 'Hz_2': (4,), 'E_2': (0, 1), 
+       'H_2': (2, 3, 4), 'site_2': (0, 1, 2, 3, 4)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:02:00  1970-01-01 00:03:40
+----------  -------------------  -------------------
+>>> print(signal_2c)
+SignalSet: 5 channels, 1 run
+tags: {'Ex_2': (0,), 'Ey_2': (1,), 'Hx_2': (2,), 
+       'Hy_2': (3,), 'Hz_2': (4,), 'E_2': (0, 1), 
+       'H_2': (2, 3, 4), 'site_2': (0, 1, 2, 3, 4)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+      1024  1970-01-01 00:06:40  1970-01-01 00:07:30
+----------  -------------------  -------------------
+
+We see that they all have the same tags and that the 3 time intervals don't overlap.
+For these reasons, we can join them (see :meth:`.SignalSet.join`) into one signal set, ``signal_2``:
+
+>>> signal_2 = signal_2a | signal_2b | signal_2c
+
+When we print ``signal_2``, we see that now the 3 runs of site 2 are gathered into one :class:`.SignalSet` object:
+
+>>> print(signal_2)
+SignalSet: 5 channels, 3 runs
+tags: {'Ex_2': (0,), 'Ey_2': (1,), 'Hx_2': (2,), 
+       'Hy_2': (3,), 'Hz_2': (4,), 'E_2': (0, 1), 
+       'H_2': (2, 3, 4), 'site_2': (0, 1, 2, 3, 4)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:00  1970-01-01 00:01:40
+       512  1970-01-01 00:02:00  1970-01-01 00:03:40
+      1024  1970-01-01 00:06:40  1970-01-01 00:07:30
+----------  -------------------  -------------------
+
+And now attributes relatives to the runs give the values for all runs:
+
+>>> print(signal_2.sampling_rates)
+[  512.   512.  1024.]
+>>> print(signal_2.intervals)
+[[   0.  100.]
+ [ 120.  220.]
+ [ 400.  450.]]
+>>> print(signal_2.starts)
+[   0.  120.  400.]
+
+Note that these values are passed as numpy array, allowing for a lot of operations on them:
+
+>>> print(signal_2.sampling_rates == 1024)
+[False  False   True]
+
+
+Extracting time intervals
+=========================
+
+The :meth:`.SignalSet.extract_t` method can narrow the time interval of a signal set.
+The runs outside the interval are skipped and the others are eventually reduced to fit the interval:
+
+>>> print(signal_2.extract_t(50, 200))
+SignalSet: 5 channels, 2 runs
+tags: {'Ex_2': (0,), 'Ey_2': (1,), 'Hx_2': (2,), 
+       'Hy_2': (3,), 'Hz_2': (4,), 'E_2': (0, 1), 
+       'H_2': (2, 3, 4), 'site_2': (0, 1, 2, 3, 4)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:50  1970-01-01 00:01:40
+       512  1970-01-01 00:02:00  1970-01-01 00:03:20
+----------  -------------------  -------------------
+
+
+The :meth:`.SignalSet.extract_t` method can also be used to exclude a given time interval:
+
+>>> print(signal_2.extract_t(50, 200, exclude=True))
+SignalSet: 5 channels, 3 runs
+tags: {'Ex_2': (0,), 'Ey_2': (1,), 'Hx_2': (2,), 
+       'Hy_2': (3,), 'Hz_2': (4,), 'E_2': (0, 1), 
+       'H_2': (2, 3, 4), 'site_2': (0, 1, 2, 3, 4)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:00  1970-01-01 00:00:50
+       512  1970-01-01 00:03:20  1970-01-01 00:03:40
+      1024  1970-01-01 00:06:40  1970-01-01 00:07:30
+----------  -------------------  -------------------
+
+
+Splitting and merging channels
+==============================
+
+>>> print(signal_2.E_2)
+SignalSet: 2 channels, 3 runs
+tags: {'Ex_2': (0,), 'Ey_2': (1,), 'E_2': (0, 1)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:00  1970-01-01 00:01:40
+       512  1970-01-01 00:02:00  1970-01-01 00:03:40
+      1024  1970-01-01 00:06:40  1970-01-01 00:07:30
+----------  -------------------  -------------------
+
+
+>>> print(signal_2.Ex_2 & signal_2.Hy_2)
+SignalSet: 2 channels, 3 runs
+tags: {'Ex_2': (0,), 'Hy_2': (1,)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:00  1970-01-01 00:01:40
+       512  1970-01-01 00:02:00  1970-01-01 00:03:40
+      1024  1970-01-01 00:06:40  1970-01-01 00:07:30
+----------  -------------------  -------------------
+
+>>> print(signal_1 & signal_2)
+SignalSet: 10 channels, 1 run
+tags: {'Ex_1': (0,), 'Ex_2': (5,), 'Ey_1': (1,),
+       'Ey_2': (6,), 'Hx_1': (2,), 'Hx_2': (7,),
+       'Hy_1': (3,), 'Hy_2': (8,), 'Hz_1': (4,),
+       'Hz_2': (9,), 'E_1': (0, 1), 'E_2': (5, 6),
+       'H_1': (2, 3, 4), 'H_2': (7, 8, 9),
+       'site_1': (0, 1, 2, 3, 4),
+       'site_2': (5, 6, 7, 8, 9)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:02:00  1970-01-01 00:03:40
+----------  -------------------  -------------------
+
+
+Selecting channels and runs
+===========================
+
+
+>>> print(signal_2.select_channels(['Ex_2', 'Hy_2']))
+SignalSet: 2 channels, 3 runs
+tags: {'Ex_2': (0,), 'Hy_2': (1,)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:00  1970-01-01 00:01:40
+       512  1970-01-01 00:02:00  1970-01-01 00:03:40
+      1024  1970-01-01 00:06:40  1970-01-01 00:07:30
+----------  -------------------  -------------------
+
+>>> mask = signal_2.sampling_rates == 512
+>>> print(mask)
+[ True   True  False]
+
+>>> print(signal_2.select_runs(mask))
+SignalSet: 5 channels, 2 runs
+tags: {'Ex_2': (0,), 'Ey_2': (1,), 'Hx_2': (2,), 
+       'Hy_2': (3,), 'Hz_2': (4,), 'E_2': (0, 1), 
+       'H_2': (2, 3, 4), 'site_2': (0, 1, 2, 3, 4)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:00  1970-01-01 00:01:40
+       512  1970-01-01 00:02:00  1970-01-01 00:03:40
+----------  -------------------  -------------------
+
+>>> print(signal_2.select_runs(~mask))
+SignalSet: 5 channels, 1 run
+tags: {'Ex_2': (0,), 'Ey_2': (1,), 'Hx_2': (2,), 
+       'Hy_2': (3,), 'Hz_2': (4,), 'E_2': (0, 1), 
+       'H_2': (2, 3, 4), 'site_2': (0, 1, 2, 3, 4)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+      1024  1970-01-01 00:06:40  1970-01-01 00:07:30
+----------  -------------------  -------------------
+
+
+>>> print(signal_2[['Ex_2', 'Hy_2'], mask])
+SignalSet: 2 channels, 2 runs
+tags: {'Ex_2': (0,), 'Hy_2': (1,)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:00  1970-01-01 00:01:40
+       512  1970-01-01 00:02:00  1970-01-01 00:03:40
+----------  -------------------  -------------------
+
+
+Store, search & combine: the inventory
+======================================
+
+:class:`.Inventory`
+
+>>> inventory = rb.Inventory(all_signals)
+
+>>> inventory.tags  # doctest: +SKIP
+set(['E_3', 'E_2', 'E_1', 'Ey_2', 'Hz_4', 'E_5', 'Ey_4', 'Ex_4', 'site_2', 'site_3', 'site_1', 'site_4', 'site_5', 'Ey_3', 'Hy_1', 'Ey_1', 'Hy_3', 'Hy_4', 'Hy_5', 'Ey_5', 'E_4', 'Hx_1', 'Hx_3', 'Hx_2', 'Hx_5', 'Hx_4', 'Hy_2', 'Ex_2', 'Ex_3', 'Hz_5', 'Ex_1', 'Hz_3', 'Hz_2', 'Hz_1', 'Ex_5', 'H_4', 'H_5', 'H_2', 'H_3', 'H_1'])
+
+>>> print(inventory.select_channels('site_3').pack())
+SignalSet: 5 channels, 2 runs
+tags: {'Ex_3': (0,), 'Ey_3': (1,), 'Hx_3': (2,), 
+       'Hy_3': (3,), 'Hz_3': (4,), 'E_3': (0, 1), 
+       'H_3': (2, 3, 4), 'site_3': (0, 1, 2, 3, 4)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:10  1970-01-01 00:05:00
+      1024  1970-01-01 00:05:50  1970-01-01 00:08:20 
+----------  -------------------  -------------------
+
+
+>>> print(inventory.select_channels('site_2', 'site_3').pack())
+SignalSet: 10 channels, 3 runs
+tags: {'Ex_2': (0,), 'Ex_3': (5,), 'Ey_2': (1,),
+       'Ey_3': (6,), 'Hx_2': (2,), 'Hx_3': (7,),
+       'Hy_2': (3,), 'Hy_3': (8,), 'Hz_2': (4,),
+       'Hz_3': (9,), 'E_2': (0, 1), 'E_3': (5, 6),
+       'H_2': (2, 3, 4), 'H_3': (7, 8, 9),
+       'site_2': (0, 1, 2, 3, 4),
+       'site_3': (5, 6, 7, 8, 9)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:10  1970-01-01 00:01:40
+       512  1970-01-01 00:02:00  1970-01-01 00:03:40
+      1024  1970-01-01 00:06:40  1970-01-01 00:07:30
+----------  -------------------  -------------------
+
+
+>>> print(inventory.select_channels('site_3', 'site_5').pack())
+SignalSet: 10 channels, 1 run
+tags: {'Ex_3': (0,), 'Ex_5': (5,), 'Ey_3': (1,),
+       'Ey_5': (6,), 'Hx_3': (2,), 'Hx_5': (7,),
+       'Hy_3': (3,), 'Hy_5': (8,), 'Hz_3': (4,),
+       'Hz_5': (9,), 'E_3': (0, 1), 'E_5': (5, 6),
+       'H_3': (2, 3, 4), 'H_5': (7, 8, 9),
+       'site_3': (0, 1, 2, 3, 4),
+       'site_5': (5, 6, 7, 8, 9)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+      1024  1970-01-01 00:05:50  1970-01-01 00:08:20
+----------  -------------------  -------------------
+
+>>> print(inventory.select_channels('site_2', 'site_4').pack())
+SignalSet: 10 channels, 2 runs
+tags: {'Ex_2': (0,), 'Ex_4': (5,), 'Ey_2': (1,),
+       'Ey_4': (6,), 'Hx_2': (2,), 'Hx_4': (7,),
+       'Hy_2': (3,), 'Hy_4': (8,), 'Hz_2': (4,),
+       'Hz_4': (9,), 'E_2': (0, 1), 'E_4': (5, 6),
+       'H_2': (2, 3, 4), 'H_4': (7, 8, 9),
+       'site_2': (0, 1, 2, 3, 4),
+       'site_4': (5, 6, 7, 8, 9)}
+----------  -------------------  -------------------
+  sampling                start                 stop
+       512  1970-01-01 00:00:05  1970-01-01 00:01:40
+       512  1970-01-01 00:02:00  1970-01-01 00:03:40
+----------  -------------------  -------------------
+
+>>> print(inventory.pack())
+None
+
+>>> print(inventory.select_channels('site_2', 'site_4').filter('E_*').pack())
+    SignalSet: 4 channels, 2 runs
+    tags: {'Ex_2': (0,), 'Ex_4': (2,), 'Ey_2': (1,),
+           'Ey_4': (3,), 'E_2': (0, 1), 'E_4': (2, 3)}
+    ----------  -------------------  -------------------
+      sampling                start                 stop
+           512  1970-01-01 00:00:05  1970-01-01 00:01:40
+           512  1970-01-01 00:02:00  1970-01-01 00:03:40
+    ----------  -------------------  -------------------
+
