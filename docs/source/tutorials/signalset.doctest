@@ -137,9 +137,9 @@ We can access to all the informations of a signal set through its attribute:
 >>> print(signal_1.nb_runs)
 1
 >>> print(signal_1.sampling_rates)
-[ 512.]
+[512.]
 >>> print(signal_1.intervals)
-[[ 110.  250.]]
+[[110. 250.]]
 >>> print(signal_1.sizes)
 [71681]
 
@@ -201,9 +201,9 @@ And now attributes relatives to the runs give the values for all runs:
 >>> print(signal_2.sampling_rates)
 [  512.   512.  1024.]
 >>> print(signal_2.intervals)
-[[   0.  100.]
- [ 120.  220.]
- [ 400.  450.]]
+[[  0. 100.]
+ [120. 220.]
+ [400. 450.]]
 >>> print(signal_2.starts)
 [   0.  120.  400.]
 
