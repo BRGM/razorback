@@ -1,5 +1,7 @@
-docs/build/*
-docs/source/_build/*
+build/
+_build/
+dist/
+*.egg-info/
 
 .cache/
 
