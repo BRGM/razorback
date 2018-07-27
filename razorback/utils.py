@@ -297,13 +297,17 @@ def tags_from_path(names, pattern, *tag_tpls):
 
     Examples:
 
-    >>> tags_from_path(['rep/A/X', 'rep/B/Y'], 'rep/{a}/{x}.txt', '{a}_{x}')
+    >>> g = tags_from_path(['rep/A/X.txt', 'rep/B/Y.txt'], 'rep/{a}/{x}.txt', '{a}_{x}')
+    >>> list(g)
+    [('rep/A/X.txt', ['A_X']), ('rep/B/Y.txt', ['B_Y'])]
 
-    >>> tags_from_path(names, 'path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{b}_{c}_{d}')
-    >>> tags_from_path(names, 'path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{d}')
-    >>> tags_from_path(names, 'path_{a}/*/*/file_{d}.txt', '{a}_{d}')
-    >>> tags_from_path(names, 'path_{a}/**/file_{d}.txt', '{a}_{d}')
-    >>> tags_from_path(names, '**_{d}.txt', '{d}')
+    more complex patterns are possible, like:
+
+    >>> g = tags_from_path(names, 'path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{b}_{c}_{d}')
+    >>> g = tags_from_path(names, 'path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{d}')
+    >>> g = tags_from_path(names, 'path_{a}/*/*/file_{d}.txt', '{a}_{d}')
+    >>> g = tags_from_path(names, 'path_{a}/**/file_{d}.txt', '{a}_{d}')
+    >>> g = tags_from_path(names, '**_{d}.txt', '{d}')
 
 
     using tags_from_path() to build an inventory from a directory tree:
@@ -327,7 +331,7 @@ def tags_from_path(names, pattern, *tag_tpls):
 
     match = re.compile(rep).match
     for name in names:
-        m = match(name)
+        m = match(os.path.normpath(name))
         if m:
             values = m.groups()
             new_names = [tpl.format(**dict(zip(keys, values))) for tpl in tag_tpls]
