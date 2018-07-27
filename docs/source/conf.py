@@ -22,15 +22,17 @@ import sphinx_rtd_theme
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../../'))
 
 
 def run_apidoc(_):
     from sphinx.apidoc import main
     import os
+    import shutil
     cur_dir = os.path.dirname(__file__)
     module = os.path.join(cur_dir, '../../razorback')
     output_path = os.path.join(cur_dir, '_build/api')
+    shutil.rmtree(output_path)
     main(['progname',
         '--separate',
         '--module-first',
