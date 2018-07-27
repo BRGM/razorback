@@ -287,35 +287,35 @@ def tags_from_path(names, pattern, *tag_tpls):
     identifier must be a valid identifier in python grammar.
 
     Some special characters are available:
-        '*'     matches everything in one directory path level
-        '**'    matches everything across directory path level
-        '?'     matches any single character
-        [seq]   matches any character in seq
-        [!seq]  matches any character not in seq
+
+        - '*'     matches everything in one directory path level
+        - '**'    matches everything across directory path level
+        - '?'     matches any single character
+        - [seq]   matches any character in seq
+        - [!seq]  matches any character not in seq
 
 
-    Example:
-    ========
+    Examples:
 
-    tags_from_path(['rep/A/X', 'rep/B/Y']', rep/{a}/{x}.txt', '{a}_{x}')
+    >>> tags_from_path(['rep/A/X', 'rep/B/Y'], 'rep/{a}/{x}.txt', '{a}_{x}')
 
-    tags_from_path(names, 'path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{b}_{c}_{d}')
-    tags_from_path(names, 'path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{d}')
-    tags_from_path(names, 'path_{a}/*/*/file_{d}.txt', '{a}_{d}')
-    tags_from_path(names, 'path_{a}/**/file_{d}.txt', '{a}_{d}')
-    tags_from_path(names, '**_{d}.txt', '{d}')
+    >>> tags_from_path(names, 'path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{b}_{c}_{d}')
+    >>> tags_from_path(names, 'path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{d}')
+    >>> tags_from_path(names, 'path_{a}/*/*/file_{d}.txt', '{a}_{d}')
+    >>> tags_from_path(names, 'path_{a}/**/file_{d}.txt', '{a}_{d}')
+    >>> tags_from_path(names, '**_{d}.txt', '{d}')
 
 
     using tags_from_path() to build an inventory from a directory tree:
 
-    root = 'the/main/directory/'
-    pattern = '**/Set?/site{site}/{type}/meas*/*_T{channel}_BL*.ats'
-    tag_tpl =  'site{site}_{channel}_{type}'
-    files = (os.path.join(r, f) for r, _, fs in os.walk(root) if fs for f in fs)
-    inv = Inventory(
-        SignalSet({tag:0 for tag in tags}, rb.io.ats.load_ats([name], calibrations=None, lazy=True))
-        for name, tags in tags_from_path(files, pattern, tag_tpl)
-    )
+    >>> root = 'the/main/directory/'
+    ... pattern = '**/Set?/site{site}/{type}/meas*/*_T{channel}_BL*.ats'
+    ... tag_tpl =  'site{site}_{channel}_{type}'
+    ... files = (os.path.join(r, f) for r, _, fs in os.walk(root) if fs for f in fs)
+    ... inv = Inventory(
+    ...     SignalSet({tag:0 for tag in tags}, rb.io.ats.load_ats([name], calibrations=None, lazy=True))
+    ...     for name, tags in tags_from_path(files, pattern, tag_tpl)
+    ... )
 
     """
     rep = _prepare_pattern(pattern)
