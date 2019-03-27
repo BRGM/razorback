@@ -12,6 +12,7 @@ setup(
     url='https://github.com/BRGM/razorback',
     license='GNU GPLv3',
     packages=find_packages(exclude=('tests', 'docs')),
+    install_requires=['numpy', 'scipy'],
     entry_points = {
         'console_scripts':
             ['razorback-procats121=razorback.scripts.procats_121:main'],
