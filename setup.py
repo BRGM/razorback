@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='razorback',
-    version='0.2.2',
+    version='0.2.2b',
     description='Robust estimation of linear response functions',
     author='Farid Smai',
     author_email='f.smai@brgm.fr',
