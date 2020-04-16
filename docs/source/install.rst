@@ -2,7 +2,7 @@ Installing razorback
 ====================
 
 The stable version can be installed with:
-(*Not yet available*)
+
 
 .. code-block:: bash
 
