@@ -2,6 +2,7 @@
 """
 
 
+import warnings
 import itertools
 from collections import Counter, MutableMapping
 from functools import reduce
@@ -240,9 +241,8 @@ class SignalSet(object):
         lengths = set(len(s.data) for s in signals)
         assert len(lengths) <= 1, "all signals must have the same length"
 
-        disjoint = lambda a, b: a[1] <= b[0] or b[1] <= a[0]
-        pairs = itertools.combinations((s.interval for s in signals), 2)
-        assert all(disjoint(i1, i2) for i1, i2 in pairs), "signals must not overlap"
+        l = sorted((s.interval for s in signals), key=lambda e: e[0])
+        assert all(l[i][1]<=l[i+1][0] for i in range(len(l)-1)), "signals must not overlap"
 
         self._signals = tuple(sorted(signals, key=lambda s: s.start))
         self._tags = None
@@ -604,11 +604,45 @@ class SignalSet(object):
 
         return coeffs, (l_Nw, l_Lw, l_shift)
 
-        ## TO REMOVE
-        # assert len(set(l_Lw)) == 1
-        # assert len(set(l_Lw)) == 1
-        # Nw, Lw, shift = sum(l_Nw), l_Lw[0], l_shift[0]
-        # return coeffs, (Nw, Lw, shift)
+    def merge_consecutive_runs(self):
+        """ return a new SignalSet where consecutive runs are merged into one.
+
+        EXPERIMENTAL
+
+        !!! calibrations taken from the first run
+
+        """
+        warnings.warn("SignalSet.merge_consecutive_runs() is experimental")
+        res = SignalSet(self.tags)
+        for sampling in np.unique(self.sampling_rates):
+            ss = self.select_runs(self.sampling_rates == sampling)
+            is_consecutive = np.isclose(ss.sizes[:-1]/sampling, ss.starts[1:] - ss.starts[:-1])
+            for start, stop in _group_indices(is_consecutive):
+                group = ss.select_runs(slice(start, stop))
+                data = [np.concatenate([v.data[i] for v in group.signals])
+                        for i in range(group.nb_channels)]
+                res |= SyncSignal(data, sampling, group.starts[0], group.signals[0].calibrations)
+        return res
+
+
+def _group_indices(bool_arr):
+    """
+    bool_arr = [0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, ...]
+    -> [(2, 5), (6, 7), (10, ?), ...]
+    """
+    assert np.ndim(bool_arr) == 1
+    start, in_group = None, False
+    for i, b in enumerate(bool_arr):
+        if in_group == b:
+            continue
+        elif in_group:
+            yield (start, i+1)
+            in_group = False
+        else:
+            start = i
+            in_group = True
+    if in_group:
+        yield (start, None)
 
 
 class SyncSignal(object):

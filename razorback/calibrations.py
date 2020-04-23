@@ -7,34 +7,24 @@ import re
 import numpy as np
 import scipy.interpolate
 
-from .data import data_path
-from .data import DataPath
+from .data import get_data_file
 
 
 __all__ = ['metronix']
 
 
-METRONIX_DIR = os.path.join(data_path(), "metronix_calibration")
+METRONIX_DATA_PATH = "metronix_calibration"
 
 
-metronix_path = DataPath()
-phoenix_path = DataPath()
-
-
-def metronix(
-    filename, sampling_rate,
-    data_dir=None, chopper_on_limit=512.,
-):
+def metronix(filename, sampling_rate, chopper_on_limit=512.):
     """ return calibration function for metronix devices
 
     Parameters
     ----------
     filename: string
         data file name
+        resolved with data.get_data_file(filename, calibrations.METRONIX_DATA_PATH)
     sampling_rate: float
-    data_dir: string or None [optional]
-        data file directory
-        if None, internal package directory is used: calibrations.METRONIX_DIR
     chopper_on_limit: float [optional]
         threshold for activating chopper
 
@@ -65,7 +55,7 @@ def metronix(
         name, _ = os.path.splitext(os.path.basename(filename))
         m = re.match(pattern, name)
         if m is None:
-            raise ValueError("cannot find version of calibration file %r"
+            raise ValueError("cannot find version of calibration file '%s'"
                              % filename)
         return m.group(1)
 
@@ -98,9 +88,7 @@ def metronix(
 
         return calib_func
 
-    if data_dir is None:
-        data_dir = METRONIX_DIR
-    filename = os.path.join(data_dir, filename)
+    filename = get_data_file(filename, METRONIX_DATA_PATH)
     with open(filename, 'r') as file:
         lines = file.readlines()
 
