@@ -151,11 +151,14 @@ def read_ats_header(filename):
         ('Comments', '512s'),
     ]
 
-    with open(filename, 'rb') as f:
-        b_length = f.read(2)
-        (length,) = struct.unpack('H', b_length)
-        f.seek(0)
-        b_header = f.read(length)
+    try:
+        with open(filename, 'rb') as f:
+            b_length = f.read(2)
+            (length,) = struct.unpack('H', b_length)
+            f.seek(0)
+            b_header = f.read(length)
+    except Exception:
+        raise Exception(f"unable to read header of ats file: {filename}")
 
     fmt = ''.join(f for (_, f) in byte_format)
     header = dict(

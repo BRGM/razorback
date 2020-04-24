@@ -9,7 +9,7 @@ PKG = pathlib.Path(__file__).parent
 
 setup(
     name='razorback',
-    version='0.2.2b2',
+    version='0.3.0',
     description='Robust estimation of linear response functions',
     author='Farid Smai',
     author_email='f.smai@brgm.fr',
@@ -19,8 +19,4 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=('tests', 'docs')),
     install_requires=['numpy', 'scipy', 'dask'],
-    entry_points = {
-        'console_scripts':
-            ['razorback-procats121=razorback.scripts.procats_121:main'],
-    }
 )

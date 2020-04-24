@@ -2,30 +2,35 @@
 """
 
 
-import os
+import pathlib
 
 
-def data_path():
-    " get the path to the data directory "
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), 'data/'))
+def default_data_path(target):
+    " returns the default (internal) path to the data directory "
+    return pathlib.Path(__file__).parent / 'data' / target
 
 
-class DataPath(object):
+def data_path(target):
+    " returns the path to the data directory "
+    local = pathlib.Path().resolve() / 'data' / target
+    if local.is_dir():
+        return local
+    return default_data_path(target)
+
+
+def get_data_file(filename, dirname):
+    """ returns valid path to data file
+
+    Raises ValueError if not found.
+
+    It seeks for a file names `filename` in different locations (in that order):
+        1/ `data_path(dirname)`
+        2/ `default_data_path(dirname)`
+
     """
-    """
-    
-    def __init__(self):
-        self.paths = []
-
-    def register(self, path):
-        path = os.path.abspath(path)
-        assert os.path.isdir(path)
-        if path not in self.paths:
-            self.paths.append(path)
-
-    def get(self, filename):
-        for path in self.paths:
-            res = os.path.join(path, filename)
-            if os.path.exists(res):
-                return res
-        return None  # nothing found
+    data_dirs = [data_path(dirname), default_data_path(dirname)]
+    for directory in data_dirs:
+        datafile = directory / filename
+        if datafile.exists():
+            return datafile
+    raise ValueError(f"'{filename}' file not found in '{dirname}' data directory")
