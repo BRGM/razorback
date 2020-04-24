@@ -351,10 +351,6 @@ def compute_prefilter(data, freq, prefilter, remote=None, fourier_opts=None):
     return times, filter_value
 
 
-#####################################################################################
-#####################################################################################
-
-
 def tags_from_path(names, pattern, *tag_tpls):
     """ yield (name, tags) for each name in names
 
@@ -391,10 +387,10 @@ def tags_from_path(names, pattern, *tag_tpls):
     using tags_from_path() to build an inventory from a directory tree:
 
     >>> root = 'the/main/directory/'
-    ... pattern = '**/Set?/site{site}/{type}/meas*/*_T{channel}_BL*.ats'
-    ... tag_tpl =  'site{site}_{channel}_{type}'
-    ... files = (os.path.join(r, f) for r, _, fs in os.walk(root) if fs for f in fs)
-    ... inv = Inventory(
+    >>> pattern = '**/Set?/site{site}/{type}/meas*/*_T{channel}_BL*.ats'
+    >>> tag_tpl =  'site{site}_{channel}_{type}'
+    >>> files = (os.path.join(r, f) for r, _, fs in os.walk(root) if fs for f in fs)
+    >>> inv = Inventory(
     ...     SignalSet({tag:0 for tag in tags}, rb.io.ats.load_ats([name], calibrations=None, lazy=True))
     ...     for name, tags in tags_from_path(files, pattern, tag_tpl)
     ... )
@@ -414,13 +410,6 @@ def tags_from_path(names, pattern, *tag_tpls):
             values = m.groups()
             new_names = [tpl.format(**dict(zip(keys, values))) for tpl in tag_tpls]
             yield name, new_names
-
-
-try:
-    basestring  # python 2
-except NameError:
-    basestring = str  # python 3
-def isstring(obj): return isinstance(obj, basestring)
 
 
 def _prepare_pattern(pattern):
@@ -464,32 +453,3 @@ def _get_fields(pattern):
         if not re.match('[_a-zA-Z][_a-zA-Z0-9]*', field_name):
             raise ValueError("'{%s}' is not valid" % field_name)
         yield field_name
-
-
-def _test_tags_from_path():
-    tpl = os.path.normpath('path_{a}/to_{b}/my_{c}/file_{d}.txt')
-    files = [tpl.format(a=_a, b=_b, c=_c, d=_d)
-             for _a in 'AB'
-             for _b in 'X'
-             for _c in 'Y'
-             for _d in '123'
-            ]
-
-    def test(pattern, *labels):
-        tpl = "{0!r:<50}{1!r}"
-        print()
-        print(tpl.format(pattern, labels))
-        for x, y in tags_from_path(files, pattern, *labels): print(tpl.format(x, y))
-
-    test('path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{b}_{c}_{d}')
-    test('path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{d}')
-    test('path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{d}', '{a}')
-    test('path_{a}/*/*/file_{d}.txt', '{a}_{d}')
-    test('path_{a}/**/file_{d}.txt', '{a}_{d}')
-    test('**_{d}.txt', '{d}')
-    test('*[AB]/**/{i}.txt', '{i}')
-    test('path_[!A]/**/{i}.txt', '{i}')
-
-
-#####################################################################################
-#####################################################################################
