@@ -4,7 +4,8 @@
 
 import warnings
 import itertools
-from collections import Counter, MutableMapping
+from collections import Counter
+from collections.abc import MutableMapping
 from functools import reduce
 from datetime import datetime
 import fnmatch
