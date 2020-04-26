@@ -3,6 +3,7 @@
 
 
 import os
+import warnings
 import itertools
 from collections import namedtuple
 
@@ -29,6 +30,15 @@ class BaseArrayProxy(object):
         self.source = source
         self.shape = shape
         self.dtype = dtype
+        self.ndim = len(shape)
+
+    def __array__(self, dtype=None, **kwargs):
+        x = self[:]
+        if dtype and x.dtype != dtype:
+            x = x.astype(dtype)
+        if not isinstance(x, np.ndarray):
+            x = np.array(x)
+        return x
 
     def __getitem__(self, index):
         slice_index, final_index = self._pure_slice_index(index)
@@ -112,7 +122,8 @@ class BinaryFileArray_1D(FileArrayProxy):
             f.seek(offset + self.dtype.itemsize * idx.start)
             length = idx.stop - idx.start
             arr = np.fromfile(f, dtype=self.dtype, count=length)
-            assert len(arr) == length, 'get %s values, expected %s' % (len(arr), length)
+            if len(arr) != length:
+                warnings.warn(f"while reading file {str(self.source)!r} : get {len(arr)} values but header indicates {length}")
         return arr[::idx.step]
 
 

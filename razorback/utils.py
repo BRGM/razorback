@@ -138,6 +138,7 @@ def impedance(
 
     l_z, l_ivt, l_err = [], [], []
     for freq in l_freq:
+        print(f"starting frequency {freq:g}")
         fail_at_first_stage = False
         coeffs, (l_Nw, l_Lw, l_shift) = data.fourier_coefficients(freq, **fourier_opts)
         e = [coeffs[i] for i in data.tags[tag_elec]]
@@ -205,6 +206,83 @@ def impedance(
     return ImpedanceResult(np.array(l_z), l_ivt, np.array(l_err))
 
 
+def prefilter_values(
+    data, l_freq,
+    prefilter,
+    fourier_opts=None,
+    remote=None,
+    tag_elec='E', tag_mag='B',
+    real_pb=False,
+):
+    default_fourier_opts = dict(Nper=8, overlap=.71, window=slepian_window(4))
+    fourier_opts = fourier_opts if fourier_opts else {}
+    fourier_opts = dict(itertools.chain(default_fourier_opts.items(), fourier_opts.items()))
+
+    if real_pb:
+        _transfer_function = transfer_function_real_prob
+    else:
+        _transfer_function = transfer_function
+
+    l_values = []
+    l_times = []
+    for freq in l_freq:
+        coeffs, (l_Nw, l_Lw, l_shift) = data.fourier_coefficients(freq, **fourier_opts)
+        e = [coeffs[i] for i in data.tags[tag_elec]]
+        b = [coeffs[i] for i in data.tags[tag_mag]]
+
+        inputs = np.transpose(b)
+        l_values.append([prefilter.value(line, inputs) for line in e])
+
+        times = [ (shift * np.arange(Nw) + 0.5 * Lw) / s.sampling_rate + s.start
+                  for s, (Nw, Lw, shift) in zip(data.signals, zip(*(l_Nw, l_Lw, l_shift))) ]
+        l_times.append(np.concatenate(times))
+
+    return l_values, l_times
+
+
+def prefilter_values_mass_proc(
+    data, remote_names,
+    l_freq, l_interval,
+    prefilter
+):
+    """
+    """
+
+    E = data.tags.E
+    B = data.tags.B
+
+    remote_combination = list(itertools.product(*[
+        (None, e) for e in range(len(remote_names))
+    ]))
+
+    ptl_values = []
+    ptl_times = []
+    for k, rindices in enumerate(remote_combination):
+        rcomb = [data.tags[remote_names[e]]
+                 for e in rindices if e is not None]
+        Bremote = sum(rcomb, ())
+
+        options = dict()
+        if Bremote:
+            options['remote'] = 'Bremote'
+            data.tags['Bremote'] = Bremote
+
+        tl_values = []
+        tl_times = []
+        for i, interval in enumerate(l_interval):
+            n, m = map(len, [remote_combination, l_interval])
+            print('%.1f%%' % ((100. * (k*m+i) / (n*m))))
+            rdata = data.extract_t(*interval)
+            l_values, l_times = prefilter_values(rdata, l_freq, prefilter, **options)
+            tl_values.append(l_values)
+            tl_times.append(l_times)
+
+        ptl_values.append(tl_values)
+        ptl_times.append(tl_times)
+
+    return ptl_values, ptl_times
+
+
 def apply_prefilter(outputs, inputs, prefilter, invalid_idx):
     """ return new invalid_idx augmented by prefilter result
 
@@ -219,7 +297,7 @@ def apply_prefilter(outputs, inputs, prefilter, invalid_idx):
     if prefilter is None:
         return list(invalid_idx)
 
-    return [np.union1d(ivid, prefilter(line, inputs.T))
+    return [np.union1d(ivid, prefilter(line, np.transpose(inputs)))
             for line, ivid in zip(outputs, invalid_idx)]
 
 
@@ -273,10 +351,6 @@ def compute_prefilter(data, freq, prefilter, remote=None, fourier_opts=None):
     return times, filter_value
 
 
-#####################################################################################
-#####################################################################################
-
-
 def tags_from_path(names, pattern, *tag_tpls):
     """ yield (name, tags) for each name in names
 
@@ -313,10 +387,10 @@ def tags_from_path(names, pattern, *tag_tpls):
     using tags_from_path() to build an inventory from a directory tree:
 
     >>> root = 'the/main/directory/'
-    ... pattern = '**/Set?/site{site}/{type}/meas*/*_T{channel}_BL*.ats'
-    ... tag_tpl =  'site{site}_{channel}_{type}'
-    ... files = (os.path.join(r, f) for r, _, fs in os.walk(root) if fs for f in fs)
-    ... inv = Inventory(
+    >>> pattern = '**/Set?/site{site}/{type}/meas*/*_T{channel}_BL*.ats'
+    >>> tag_tpl =  'site{site}_{channel}_{type}'
+    >>> files = (os.path.join(r, f) for r, _, fs in os.walk(root) if fs for f in fs)
+    >>> inv = Inventory(
     ...     SignalSet({tag:0 for tag in tags}, rb.io.ats.load_ats([name], calibrations=None, lazy=True))
     ...     for name, tags in tags_from_path(files, pattern, tag_tpl)
     ... )
@@ -336,13 +410,6 @@ def tags_from_path(names, pattern, *tag_tpls):
             values = m.groups()
             new_names = [tpl.format(**dict(zip(keys, values))) for tpl in tag_tpls]
             yield name, new_names
-
-
-try:
-    basestring  # python 2
-except NameError:
-    basestring = str  # python 3
-def isstring(obj): return isinstance(obj, basestring)
 
 
 def _prepare_pattern(pattern):
@@ -386,32 +453,3 @@ def _get_fields(pattern):
         if not re.match('[_a-zA-Z][_a-zA-Z0-9]*', field_name):
             raise ValueError("'{%s}' is not valid" % field_name)
         yield field_name
-
-
-def _test_tags_from_path():
-    tpl = os.path.normpath('path_{a}/to_{b}/my_{c}/file_{d}.txt')
-    files = [tpl.format(a=_a, b=_b, c=_c, d=_d)
-             for _a in 'AB'
-             for _b in 'X'
-             for _c in 'Y'
-             for _d in '123'
-            ]
-
-    def test(pattern, *labels):
-        tpl = "{0!r:<50}{1!r}"
-        print()
-        print(tpl.format(pattern, labels))
-        for x, y in tags_from_path(files, pattern, *labels): print(tpl.format(x, y))
-
-    test('path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{b}_{c}_{d}')
-    test('path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{d}')
-    test('path_{a}/to_{b}/my_{c}/file_{d}.txt', '{a}_{d}', '{a}')
-    test('path_{a}/*/*/file_{d}.txt', '{a}_{d}')
-    test('path_{a}/**/file_{d}.txt', '{a}_{d}')
-    test('**_{d}.txt', '{d}')
-    test('*[AB]/**/{i}.txt', '{i}')
-    test('path_[!A]/**/{i}.txt', '{i}')
-
-
-#####################################################################################
-#####################################################################################

@@ -132,7 +132,7 @@ def slepian(N, tau, N_MAX=1000):
 
 
     if N <= N_MAX:
-        res = signal.slepian(N, (4./N) * tau)  # factor 2 pour coller a la definition +/- tau
+        res = signal.windows.dpss(N, tau)
         res /= res.mean()
     else:
         a = float(N) / float(N_MAX)
