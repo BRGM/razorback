@@ -26,15 +26,14 @@ sys.path.insert(0, os.path.abspath('../../'))
 
 
 def run_apidoc(_):
-    from sphinx.apidoc import main
+    from sphinx.ext.apidoc import main
     import os
     import shutil
     cur_dir = os.path.dirname(__file__)
     module = os.path.join(cur_dir, '../../razorback')
     output_path = os.path.join(cur_dir, '_build/api')
     shutil.rmtree(output_path, ignore_errors=True)
-    main(['progname',
-        '--separate',
+    main(['--separate',
         '--module-first',
         '--no-toc',
         '--force',
@@ -44,7 +43,8 @@ def run_apidoc(_):
 
 def setup(app):
     app.connect('builder-inited', run_apidoc)
-    app.add_javascript('copybutton.js')
+    # app.add_javascript('copybutton.js')
+    app.add_js_file('copybutton.js')
 
 # -- General configuration ------------------------------------------------
 
@@ -59,6 +59,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     # 'numpydoc',
+    'nbsphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
