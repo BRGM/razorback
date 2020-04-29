@@ -5,21 +5,22 @@
 import numpy as np
 
 
-__all__ = ['bcoher_filter', 'BCoherFilter']
+__all__ = ['cod_filter', 'CoefficientOfDeterminationFilter']
 
 
-class BCoherFilter(object):
-    """ the 'bcoher' filter
+class CoefficientOfDeterminationFilter(object):
+    """ Filter based on the coefficient of determination
+
     """
 
-    def __init__(self, coher_min, coher_max=1., size=10):
-        self._coher_min = coher_min
-        self._coher_max = coher_max
+    def __init__(self, cod_min, cod_max=1., size=10):
+        self._cod_min = cod_min
+        self._cod_max = cod_max
         self._size = size
 
     def __call__(self, e, b):
-        coher = self.value(e, b)
-        (ivid,) = np.where((coher < self._coher_min) | (coher > self._coher_max))
+        cod = self.value(e, b)
+        (ivid,) = np.where((cod < self._cod_min) | (cod > self._cod_max))
         return ivid
 
     def value(self, e, b):
@@ -28,12 +29,12 @@ class BCoherFilter(object):
         breshape = lambda arr: arr[:len(arr)-(len(arr) % size)].reshape(
             (divmod(len(arr), size)[0], size) + (-1,) * (arr.ndim-1)
         )
-        coher = np.zeros(len(e))
+        cod = np.zeros(len(e))
         queue = size + (len(e) % size)
         tmp = coeff_det(breshape(e)[:-1], breshape(b)[:-1])
-        breshape(coher)[:-1] = tmp[:, None]
-        coher[-queue:] = coeff_det(e[None, -queue:], b[None, -queue:])
-        return coher
+        breshape(cod)[:-1] = tmp[:, None]
+        cod[-queue:] = coeff_det(e[None, -queue:], b[None, -queue:])
+        return cod
 
     def coeff_determination(self, x, y):
         yc = y.conjugate()
@@ -46,4 +47,4 @@ class BCoherFilter(object):
         return res
 
 
-bcoher_filter = BCoherFilter
+cod_filter = CoefficientOfDeterminationFilter
