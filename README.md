@@ -21,5 +21,12 @@ pip install razorback
 ## Supported Platforms
 Linux, Windows, MacOS
 
+## Running tests
+
+To run the tests, clone the repository and run pytest in the main directory:
+```
+pytest
+```
+
 ## Documentation
 <https://razorback.readthedocs.io>
