@@ -193,7 +193,7 @@ def impedance(
                     ivid_line = ivid_line[~mask] - Nw
                     res = (shift * ii + 0.5 * Lw) / s.sampling_rate + s.start
                     ivt_line[start:start+len(res)] = res
-                    start += len(res)https://www.smbc-comics.com/comic/funding
+                    start += len(res)
                 ivt.append(ivt_line)
             ivt = tuple(ivt)
 
