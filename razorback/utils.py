@@ -164,6 +164,7 @@ def impedance(
                 ivid_1 = len(e) * [merge_invalid_indices(ivT)]
         else:
             T = np.empty((len(b), 0))
+            T[:] = np.nan
             be = b
             ivid_1 = None
         ## Second stage
@@ -182,6 +183,8 @@ def impedance(
                 # raise
         if fail_at_second_stage:
             z, ivid, ivt = np.array([[np.nan]*len(b)]*len(e)), None, ()
+            T = np.empty((len(b), 0))
+            T[:] = np.nan
         else:
             ivt = []
             for ivid_line in ivid:
