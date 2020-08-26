@@ -182,8 +182,9 @@ def impedance(
                 fail_at_second_stage = True
                 # raise
         if fail_at_second_stage:
+            nbr = len(br) if remote else 0
             z, ivid, ivt = np.array([[np.nan]*len(b)]*len(e)), None, ()
-            T = np.empty((len(b), 0))
+            T = np.empty((len(b),nbr))
             T[:] = np.nan
         else:
             ivt = []
