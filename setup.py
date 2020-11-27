@@ -9,7 +9,7 @@ PKG = pathlib.Path(__file__).parent
 
 setup(
     name='razorback',
-    version='0.3.0.2',
+    version='0.3.0.3',
     description='Robust estimation of linear response functions',
     author='Farid Smai',
     author_email='f.smai@brgm.fr',
