@@ -1,0 +1,3 @@
+[submodule "docs/source/tutorials/data"]
+	path = docs/source/tutorials/data
+	url = https://github.com/BRGM/razorback-tutorial-data
