@@ -20,6 +20,16 @@ Just use `pip` to get razorback and all its dependencies:
 pip install razorback
 ```
 
+## Tutorials
+
+Get the tutorials and their attached data by cloning the repository with its submodules:
+```
+git clone --recursive https://github.com/brgm/razorback.git
+```
+
+You will find the tutorials in [./docs/source/tutorials/](docs/source/tutorials/)
+
+
 ## Dependencies
 
 - Python >= 3.6
