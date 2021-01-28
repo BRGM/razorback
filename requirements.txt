@@ -3,3 +3,6 @@ scipy
 pytest
 sphinx
 numpydoc
+sphinx-rtd-theme
+nbsphinx
+ipython
