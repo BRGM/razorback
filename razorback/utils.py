@@ -22,7 +22,8 @@ from .fourier_transform import slepian_window
 __all__ = ['impedance', 'compute_prefilter', 'tags_from_path']
 
 
-ImpedanceResult = namedtuple('ImpedanceResult', 'impedance invalid_time error')
+ImpedanceResult = namedtuple('ImpedanceResult', 'impedance invalid_time error transfer_mag')
+MassProcResult = namedtuple('MassProcResult', 'remote_combination impedance invalid_time error transfer_mag')
 
 
 def impedance_mass_proc(
@@ -53,7 +54,7 @@ def impedance_mass_proc(
         (None, e) for e in range(len(remote_names))
     ]))
 
-    ptl_z, ptl_err = [], []
+    ptl_z, ptl_ivt, ptl_err, ptl_T = [], [], [], []
     l_rcomb = []
     for k, rindices in enumerate(remote_combination):
         rcomb = [data.tags[remote_names[e]]
@@ -70,21 +71,24 @@ def impedance_mass_proc(
             options['remote'] = 'Bremote'
             data.tags['Bremote'] = Bremote
 
-        tl_z, tl_err = [], []
+        tl_z, tl_ivt, tl_err, tl_T = [], [], [], []
         for i, interval in enumerate(l_interval):
             n, m = map(len, [remote_combination, l_interval])
             print('%.1f%%' % ((100. * (k*m+i) / (n*m))))
             rdata = data.extract_t(*interval)
-            #z, l_ivt, l_err = impedance(rdata, l_freq, **options)
-            z, l_ivt, l_err = impedance(rdata, l_freq, **options)
-            tl_z.append(z)
-            tl_err.append(l_err)
+            res = impedance(rdata, l_freq, **options)
+            tl_z.append(res.impedance)
+            tl_ivt.append(res.invalid_time)
+            tl_err.append(res.error)
+            tl_T.append(res.transfer_mag)
 
         ptl_z.append(tl_z)
+        ptl_ivt.append(tl_ivt)
         ptl_err.append(tl_err)
+        ptl_T.append(tl_T)
         l_rcomb.append(rindices)
 
-    return ptl_z, ptl_err, l_rcomb
+    return MassProcResult(l_rcomb, ptl_z, ptl_ivt, ptl_err, ptl_T)
 
 
 def impedance(
@@ -136,7 +140,7 @@ def impedance(
         remote_weights = remote_weights or weights
         remote_prefilter = remote_prefilter or prefilter
 
-    l_z, l_ivt, l_err = [], [], []
+    l_z, l_ivt, l_err, l_T = [], [], [], []
     for freq in l_freq:
         print(f"starting frequency {freq:g}")
         fail_at_first_stage = False
@@ -159,6 +163,8 @@ def impedance(
                 be = T.dot(br)
                 ivid_1 = len(e) * [merge_invalid_indices(ivT)]
         else:
+            T = np.empty((len(b), 0))
+            T[:] = np.nan
             be = b
             ivid_1 = None
         ## Second stage
@@ -176,7 +182,10 @@ def impedance(
                 fail_at_second_stage = True
                 # raise
         if fail_at_second_stage:
+            nbr = len(br) if remote else 0
             z, ivid, ivt = np.array([[np.nan]*len(b)]*len(e)), None, ()
+            T = np.empty((len(b),nbr))
+            T[:] = np.nan
         else:
             ivt = []
             for ivid_line in ivid:
@@ -194,6 +203,7 @@ def impedance(
 
 
         l_z.append(z)
+        l_T.append(T)
         l_ivt.append(ivt)
         ## error estimate
         if fail_at_second_stage:
@@ -203,7 +213,7 @@ def impedance(
         l_err.append(err)
 
     # return np.array(l_z), l_ivt, np.array(l_err)
-    return ImpedanceResult(np.array(l_z), l_ivt, np.array(l_err))
+    return ImpedanceResult(np.array(l_z), l_ivt, np.array(l_err), np.array(l_T))
 
 
 def prefilter_values(

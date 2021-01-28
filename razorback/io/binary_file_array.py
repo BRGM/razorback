@@ -109,9 +109,23 @@ class FileArrayProxy(BaseArrayProxy):
 
 class BinaryFileArray_1D(FileArrayProxy):
     def __init__(self, filename, offset, size, dtype, **kwds):
+        dtype = np.dtype(dtype)
+        size = self._get_real_size(filename, offset, size, dtype)
         assert isinstance(size, int) and size > 0
         shape = (size,)
         super().__init__(filename, offset, shape, dtype)
+
+    @staticmethod
+    def _get_real_size(filename, offset, size, dtype):
+        # return size
+        new_size, exact = divmod(os.stat(filename).st_size - offset, dtype.itemsize)
+        if new_size < size:
+            warnings.warn(
+                f"file {filename} with offset {offset} and dtype {dtype}"
+                f" has only {new_size} values (expected {size}).")
+            return new_size
+        else:
+            return size
 
     def extract(self, index):
         (idx,) = index
@@ -123,7 +137,11 @@ class BinaryFileArray_1D(FileArrayProxy):
             length = idx.stop - idx.start
             arr = np.fromfile(f, dtype=self.dtype, count=length)
             if len(arr) != length:
-                warnings.warn(f"while reading file {str(self.source)!r} : get {len(arr)} values but header indicates {length}")
+                # warnings.warn(f"while reading file {str(self.source)!r} : get {len(arr)} values but header indicates {length}")
+                raise Exception(
+                    f"while reading file {filename} with offset {offset}:"
+                    f" get {len(arr)} values but was expected {length}"
+                )
         return arr[::idx.step]
 
 

@@ -12,6 +12,8 @@ Its primary application field is magnetotelluric (MT) and other electromagnetic 
    :caption: User Guide
 
    install
+   citation
+   overview
    quickstart
    tutorials/index
 

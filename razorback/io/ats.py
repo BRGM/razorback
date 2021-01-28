@@ -29,6 +29,8 @@ def load_ats(filenames, calibrations=None, lazy=False):
     """
     # TODO: check for metronix calibration in headers
 
+    assert not isinstance(filenames, str), "'filenames' should be a list of str, not a single str."
+    
     samples = [read_ats_sample(f, lazy) for f in filenames]
     signals = [x for (x, _, _) in samples]
     sampling_rates = set(x for (_, x, _) in samples)
