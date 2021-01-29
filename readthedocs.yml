@@ -3,10 +3,14 @@ version: 2
 submodules:
   exclude: all
 
+sphinx:
+  configuration: docs/source/conf.py
+
 build:
   image: latest
 
 python:
   version: 3.6
-   install:
-   - requirements: requirements.txt
+  install:
+  - requirements: requirements.txt
+  - path: .
