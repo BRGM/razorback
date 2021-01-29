@@ -1,6 +1,8 @@
 """ razorback: tools for robust estimations of transfer functions.
 """
 
+__version__ = "0.3.0.4"
+
 try:
     import razorback_plus as plus
 except ModuleNotFoundError:
