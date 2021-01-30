@@ -99,6 +99,7 @@ def impedance(
     tag_elec='E', tag_mag='B',
     mest_opts=None,
     real_pb=False,
+    silent_fail=True,
 ):
     """
     TODO
@@ -158,7 +159,8 @@ def impedance(
             except Exception as ex:
                 print(ex)
                 fail_at_first_stage = True
-                # raise
+                if not silent_fail:
+                    raise
             else:
                 be = T.dot(br)
                 ivid_1 = len(e) * [merge_invalid_indices(ivT)]
@@ -180,7 +182,8 @@ def impedance(
             except Exception as ex:
                 print(ex)
                 fail_at_second_stage = True
-                # raise
+                if not silent_fail:
+                    raise
         if fail_at_second_stage:
             nbr = len(br) if remote else 0
             z, ivid, ivt = np.array([[np.nan]*len(b)]*len(e)), None, ()
@@ -307,9 +310,9 @@ def apply_prefilter(outputs, inputs, prefilter, invalid_idx):
     if prefilter is None:
         return list(invalid_idx)
 
-    return [np.union1d(ivid, prefilter(line, np.transpose(inputs)))
+    res = [np.union1d(ivid, prefilter(line, np.transpose(inputs)))
             for line, ivid in zip(outputs, invalid_idx)]
-
+    return [e if len(e) else np.empty(0, dtype=int) for e in res]
 
 
 def transfer_function_real_prob(outputs, inputs, **kwargs):
