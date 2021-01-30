@@ -11,11 +11,12 @@ import fnmatch
 
 from collections import namedtuple
 
+from functools import reduce
 import itertools
 
 import numpy as np
 
-from .mestimator import transfer_function, transfer_error, merge_invalid_indices
+from .mestimator import transfer_function, transfer_error
 from .fourier_transform import slepian_window
 
 
@@ -163,7 +164,8 @@ def impedance(
                     raise
             else:
                 be = T.dot(br)
-                ivid_1 = len(e) * [merge_invalid_indices(ivT)]
+                merged_ivT = reduce(np.union1d, ivT, np.empty(0, dtype=int))
+                ivid_1 = len(e) * [merged_ivT]
         else:
             T = np.empty((len(b), 0))
             T[:] = np.nan
