@@ -6,7 +6,6 @@ Razorback is a python package for estimating transfer functions between time sig
 Its primary application field is magnetotelluric (MT) and other electromagnetic geophysical methods.
 
 
-
 .. toctree::
    :maxdepth: 2
    :caption: User Guide
@@ -14,10 +13,7 @@ Its primary application field is magnetotelluric (MT) and other electromagnetic 
    install
    citation
    overview
-   quickstart
    tutorials/index
-
-..   tutorials
 
 
 .. toctree::
