@@ -31,7 +31,6 @@ def run_apidoc(_):
     import shutil
     cur_dir = os.path.dirname(__file__)
     module = os.path.join(cur_dir, '../../razorback')
-    # output_path = os.path.join(cur_dir, '_build/api')
     output_path = os.path.join(cur_dir, 'api')
     shutil.rmtree(output_path, ignore_errors=True)
     main(['--separate',
