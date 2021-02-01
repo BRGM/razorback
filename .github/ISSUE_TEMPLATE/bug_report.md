@@ -24,6 +24,6 @@ import razorback as rb
 
 <!-- Full error message, if any (starting from line Traceback: ...) -->
 
-### NumPy/Python version information:
+### Razorback/Python version information:
 
 <!-- Output from 'import sys, razorback; print(razorback.__version__, sys.version)' -->
