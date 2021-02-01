@@ -24,7 +24,7 @@ Its primary application field is magnetotelluric (MT) and other electromagnetic 
    :maxdepth: 1
    :caption: Reference API
 
-   _build/api/razorback
+   api/razorback
 
 
 * :ref:`genindex`

@@ -2,6 +2,7 @@ build/
 _build/
 dist/
 *.egg-info/
+docs/source/api/
 
 .cache/
 .pytest_cache/
