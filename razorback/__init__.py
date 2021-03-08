@@ -1,7 +1,7 @@
 """ razorback: tools for robust estimations of transfer functions.
 """
 
-__version__ = "0.4.0-dev"
+__version__ = "0.3.1"
 
 try:
     import razorback_plus as plus
