@@ -118,7 +118,7 @@ def transfer_function(
 
 def merge_invalid_indices(l_ivid):
     _max = lambda it: max(it) if len(it) else 0
-    Nmax = sum(map(_max, l_ivid)) + 1
+    Nmax = sum(map(_max, l_ivid)) + len(l_ivid)
     keep = np.arange(Nmax)
     for li in l_ivid:
         keep = np.delete(keep, li)
