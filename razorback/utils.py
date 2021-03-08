@@ -304,7 +304,7 @@ def apply_prefilter(outputs, inputs, prefilter, invalid_idx):
     prefilter: None or function(outputs[i], inputs) -> invalid_idx
     """
     if invalid_idx is None or not len(invalid_idx):
-        invalid_idx = [()] * len(outputs)
+        invalid_idx = [np.empty(0, dtype=int)] * len(outputs)
     if not hasattr(invalid_idx[0], '__getitem__'):
         invalid_idx = [invalid_idx] * len(outputs)
     assert len(invalid_idx) == len(outputs)
@@ -314,7 +314,7 @@ def apply_prefilter(outputs, inputs, prefilter, invalid_idx):
 
     res = [np.union1d(ivid, prefilter(line, np.transpose(inputs)))
             for line, ivid in zip(outputs, invalid_idx)]
-    return [e if len(e) else np.empty(0, dtype=int) for e in res]
+    return [np.array(e, dtype=int, copy=False) for e in res]
 
 
 def transfer_function_real_prob(outputs, inputs, **kwargs):
