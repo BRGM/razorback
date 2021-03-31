@@ -7,7 +7,14 @@ import pathlib
 
 def default_data_path(target):
     " returns the default (internal) path to the data directory "
-    return pathlib.Path(__file__).parent / 'data' / target
+    p = pathlib.Path(__file__).parent / 'data' / target
+    return p.resolve().absolute()
+
+
+def local_data_path(target):
+    " returns the local path to the data directory "
+    p = pathlib.Path() / 'data' / target
+    return p.resolve().absolute()
 
 
 def data_path(target):
