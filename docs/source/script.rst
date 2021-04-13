@@ -89,7 +89,7 @@ To extend the :code:`rzb` command, we need to informs the `setup()` function in 
   setup(
     # ...
     entry_points={
-        'rzb_commands': [
+        'rzb.commands': [
             'say-hello=mypkg.rzb_cli:cli',
         ]
     },

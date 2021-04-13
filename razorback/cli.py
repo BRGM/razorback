@@ -10,7 +10,7 @@ class PluginGroup(click.Group):
 
     def __init__(self, *args, **kwds):
         self.extra_commands = {
-            e.name: e.load() for e in iter_entry_points('rzb_commands')
+            e.name: e.load() for e in iter_entry_points('rzb.commands')
         }
         super().__init__(*args, **kwds)
 
