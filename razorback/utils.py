@@ -406,7 +406,7 @@ def tags_from_path(names, pattern, *tag_tpls):
     >>> tag_tpl =  'site{site}_{channel}_{type}'
     >>> files = (os.path.join(r, f) for r, _, fs in os.walk(root) if fs for f in fs)
     >>> inv = Inventory(
-    ...     SignalSet({tag:0 for tag in tags}, rb.io.ats.load_ats([name], calibrations=None, lazy=True))
+    ...     SignalSet({tag:0 for tag in tags}, rb.io.ats.load_ats([name], calibrations=None))
     ...     for name, tags in tags_from_path(files, pattern, tag_tpl)
     ... )
 

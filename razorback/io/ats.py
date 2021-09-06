@@ -7,6 +7,7 @@ import struct
 import glob
 
 import numpy as np
+import dask.array as da
 
 from ..signalset import SyncSignal
 from .binary_file_array import BinaryFileArray_1D
@@ -23,7 +24,7 @@ def load_ats_from(path, calibrations=None):
     return load_ats(filenames, calibrations)
 
 
-def load_ats(filenames, calibrations=None, lazy=False):
+def load_ats(filenames, calibrations=None):
     """ return a SyncSignal from multiples ats files
 
     """
@@ -31,7 +32,7 @@ def load_ats(filenames, calibrations=None, lazy=False):
 
     assert not isinstance(filenames, str), "'filenames' should be a list of str, not a single str."
     
-    samples = [read_ats_sample(f, lazy) for f in filenames]
+    samples = [read_ats_sample(f) for f in filenames]
     signals = [x for (x, _, _) in samples]
     sampling_rates = set(x for (_, x, _) in samples)
     starts = set(x for (_, _, x) in samples)
@@ -45,7 +46,7 @@ def load_ats(filenames, calibrations=None, lazy=False):
     return SyncSignal(signals, sampling_rate, start, calibrations)
 
 
-def read_ats_sample(filename, lazy=False):
+def read_ats_sample(filename):
     """ return (sample_array, sampling_rate, start_time)
 
     sampling_rate in Hz
@@ -64,13 +65,11 @@ def read_ats_sample(filename, lazy=False):
         size=sample_length,
         dtype=np.int32,
     )
-    if lazy:
-        import dask.array as da
-        # TODO: chunks could be smaller, eg when file is too big for memory
-        chunks = sample_length
-        arr = da.from_array(bf_arr, chunks, name=filename, fancy=False)
-    else:
-        arr = bf_arr[:]
+
+    # TODO: chunks could be smaller, eg when file is too big for memory
+    chunks = sample_length
+
+    arr = da.from_array(bf_arr, chunks, name=filename, fancy=False)
     arr = lsbval * arr
 
     return arr, sampling_rate, start
