@@ -8,9 +8,22 @@ import itertools
 from collections import namedtuple
 
 import numpy as np
+import dask.array as da
 
 
 __all__ = []
+
+
+def to_dask_array(array_proxy, name=None, **kwds):
+    """ Wrap BaseArrayProxy object into dask.array object.
+
+    The chunk size is adapted by dask (chunks="auto").
+    Use `dask.config.get("array.chunk-size")`
+    and `dask.config.set({"array.chunk-size": "10 MiB"})`
+    to control the maximum chunk size.
+
+    """
+    return da.from_array(array_proxy, chunks="auto", name=name, fancy=False, **kwds)
 
 
 class BaseArrayProxy(object):

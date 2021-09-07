@@ -7,10 +7,9 @@ import struct
 import glob
 
 import numpy as np
-import dask.array as da
 
 from ..signalset import SyncSignal
-from .binary_file_array import BinaryFileArray_1D
+from .binary_file_array import to_dask_array, BinaryFileArray_1D
 
 
 __all__ = ['load_ats']
@@ -65,12 +64,9 @@ def read_ats_sample(filename):
         size=sample_length,
         dtype=np.int32,
     )
-
-    # TODO: chunks could be smaller, eg when file is too big for memory
-    chunks = sample_length
-
-    arr = da.from_array(bf_arr, chunks, name=filename, fancy=False)
+    arr = to_dask_array(bf_arr, name=filename)
     arr = lsbval * arr
+    arr = arr.rechunk()
 
     return arr, sampling_rate, start
 
