@@ -555,7 +555,7 @@ class SignalSet(object):
         signals = [s for s in signals if s.size > 1]
         return type(self)(self.tags, *signals)
 
-    def fourier_coefficients(self, freq, Nper, overlap, window):
+    def fourier_coefficients(self, freq, Nper, overlap, window, **kwds):
         """ compute the fourier coefficients at freq of sliding windows
 
         coeffs, discrete_window_data = signal.fourier_coefficients(freq, Nper, overlap, window)
@@ -593,7 +593,7 @@ class SignalSet(object):
         """
 
         l_coeffs, l_windata = zip(*(
-            ss.fourier_coefficients(freq, Nper, overlap, window)
+            ss.fourier_coefficients(freq, Nper, overlap, window, **kwds)
             for ss in self.signals
         ))
 
@@ -822,7 +822,7 @@ class SyncSignal(object):
         i_stop = self._time_to_index(stop)
         return self.extract_i(i_start, i_stop, strict, include_last=True)
 
-    def fourier_coefficients(self, freq, Nper, overlap, window):
+    def fourier_coefficients(self, freq, Nper, overlap, window, **kwds):
         """ compute the fourier coefficients at freq of sliding windows
 
         coeffs, discrete_window_data = signal.fourier_coefficients(freq, Nper, overlap, window)
@@ -859,7 +859,7 @@ class SyncSignal(object):
 
         """
         coeffs, discrete_window_data = time_to_freq(
-            self.data, self.sampling_rate, freq, Nper, overlap, window
+            self.data, self.sampling_rate, freq, Nper, overlap, window, **kwds
         )
         coeffs = [c / calib(freq)
                   for (c, calib) in zip(coeffs, self.calibrations)]

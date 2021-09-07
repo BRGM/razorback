@@ -21,7 +21,7 @@ def slepian_window(tau):
     return _slepian
 
 
-def time_to_freq(data, sampling_freq, freq, Nper, overlap, window=None):
+def time_to_freq(data, sampling_freq, freq, Nper, overlap, window=None, compute=True):
     """ Compute the fourier coefficients on sliding windows.
 
     Parameters
@@ -71,12 +71,14 @@ def time_to_freq(data, sampling_freq, freq, Nper, overlap, window=None):
     pulsation = 2 * np.pi * nf
     x = np.exp((-1j * pulsation) * da.arange(Lw)) * (2/Lw)
     result = [da.dot(x, y.T) for y in sw_views]
+    if compute:
+        result = da.compute(*result)
 
     length = set(len(e) for e in result)
     assert len(length) == 1
     Nw = length.pop()
 
-    return da.compute(*result), (Nw, Lw, shift)
+    return result, (Nw, Lw, shift)
 
 
 def discrete_window(size, normalized_freq, Nper, overlap):
