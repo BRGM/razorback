@@ -771,12 +771,13 @@ class SyncSignal(object):
             start=self.start,
         )
 
-    def _time_to_index(self, time):
+    def _time_to_index(self, time, round_to='right'):
         " convert time to sample index "
-       # TODO: to test
+        round_to = round_to.lower()
+        assert round_to in ('left', 'right')
+        round_ = dict(left=np.floor, right=np.ceil)[round_to]
         index = (time - self.start) * self.sampling_rate
-        #assert index.is_integer()
-        return int(index)
+        return int(round_(index))
 
     def _index_to_time(self, index):
         " convert sample index to time "
@@ -818,8 +819,8 @@ class SyncSignal(object):
             stop = max(self.start, stop)
             start = min(self.stop, start)
             stop = min(self.stop, stop)
-        i_start = self._time_to_index(start)
-        i_stop = self._time_to_index(stop)
+        i_start = self._time_to_index(start, round_to="right")
+        i_stop = self._time_to_index(stop, round_to="left")
         return self.extract_i(i_start, i_stop, strict, include_last=True)
 
     def fourier_coefficients(self, freq, Nper, overlap, window, **kwds):
