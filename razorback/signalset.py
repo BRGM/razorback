@@ -608,21 +608,22 @@ class SignalSet(object):
     def merge_consecutive_runs(self):
         """ return a new SignalSet where consecutive runs are merged into one.
 
-        EXPERIMENTAL
-
         !!! calibrations taken from the first run
 
         """
-        warnings.warn("SignalSet.merge_consecutive_runs() is experimental")
         res = SignalSet(self.tags)
         for sampling in np.unique(self.sampling_rates):
             ss = self.select_runs(self.sampling_rates == sampling)
-            is_consecutive = np.isclose(ss.sizes[:-1]/sampling, ss.starts[1:] - ss.starts[:-1])
+            is_consecutive = np.isclose(1/sampling, ss.starts[1:] - ss.stops[:-1])
             for start, stop in _group_indices(is_consecutive):
                 group = ss.select_runs(slice(start, stop))
-                data = [np.concatenate([v.data[i] for v in group.signals])
-                        for i in range(group.nb_channels)]
-                res |= SyncSignal(data, sampling, group.starts[0], group.signals[0].calibrations)
+                data = [
+                    np.concatenate([v.data[i] for v in group.signals])
+                    for i in range(group.nb_channels)
+                ]
+                res |= SyncSignal(
+                    data, sampling, group.starts[0], group.signals[0].calibrations
+                )
         return res
 
 
@@ -1038,12 +1039,12 @@ class Inventory(object):
         freqs, tags = list(self.sampling_rates), self.tags
         sigs = [self.select_runs(f == f0 for f in freqs)._join_merge()
                 for f0 in set(itertools.chain(*freqs))]
-
         sigs = [s for s in sigs if s.nb_runs and tags.issubset(s.tags)]
-        return type(self)._type.join(*sigs) if sigs else None
 
-        # sigs = [s for s in sigs if tags.issubset(s.tags)]
-        # return type(self)._type(*sigs)
+        # return type(self)._type.join(*sigs) if sigs else None
+        if sigs:
+            return type(self)._type.join(*sigs).merge_consecutive_runs()
+        else:
+            return type(self)({})
 
     merge = _join_merge
-    # merge = pack
