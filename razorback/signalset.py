@@ -612,11 +612,13 @@ class SignalSet(object):
 
         """
         res = SignalSet(self.tags)
+        added = np.zeros(self.nb_runs, dtype=bool)
         for sampling in np.unique(self.sampling_rates):
-            ss = self.select_runs(self.sampling_rates == sampling)
-            is_consecutive = np.isclose(1/sampling, ss.starts[1:] - ss.stops[:-1])
+            mask = self.sampling_rates == sampling
+            start, stop = np.where(mask[:, None], self.intervals, np.nan).T
+            is_consecutive = np.isclose(1/sampling, start[1:] - stop[:-1])
             for start, stop in _group_indices(is_consecutive):
-                group = ss.select_runs(slice(start, stop))
+                group = self.select_runs(slice(start, stop))
                 data = [
                     np.concatenate([v.data[i] for v in group.signals])
                     for i in range(group.nb_channels)
@@ -624,8 +626,12 @@ class SignalSet(object):
                 res |= SyncSignal(
                     data, sampling, group.starts[0], group.signals[0].calibrations
                 )
+                added[start:stop] = True
+        res |= self.select_runs(np.where(~added))
+        print(self)
+        print(res)
         return res
-
+ 
 
 def _group_indices(bool_arr):
     """
