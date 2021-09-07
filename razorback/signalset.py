@@ -1041,7 +1041,6 @@ class Inventory(object):
                 for f0 in set(itertools.chain(*freqs))]
         sigs = [s for s in sigs if s.nb_runs and tags.issubset(s.tags)]
 
-        # return type(self)._type.join(*sigs) if sigs else None
         if sigs:
             return type(self)._type.join(*sigs).merge_consecutive_runs()
         else:
