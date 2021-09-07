@@ -1044,6 +1044,6 @@ class Inventory(object):
         if sigs:
             return type(self)._type.join(*sigs).merge_consecutive_runs()
         else:
-            return type(self)({})
+            return SignalSet({})
 
     merge = _join_merge
