@@ -9,7 +9,7 @@ import re
 import string
 import fnmatch
 
-from collections import namedtuple
+from typing import NamedTuple
 
 from functools import reduce
 import itertools
@@ -23,8 +23,41 @@ from .fourier_transform import slepian_window
 __all__ = ['impedance', 'compute_prefilter', 'tags_from_path']
 
 
-ImpedanceResult = namedtuple('ImpedanceResult', 'impedance invalid_time error transfer_mag')
-MassProcResult = namedtuple('MassProcResult', 'remote_combination impedance invalid_time error transfer_mag')
+class ImpedanceResult(NamedTuple):
+    """
+    impedance:
+        impedance tensor
+    invalid_time:
+        list of discared indices in Fourier coefficients
+    error:
+        impedance error estimation
+    transfer_mag:
+        transfert from remote channels to local mag
+    """
+    impedance: complex
+    invalid_time: int
+    error: float
+    transfer_mag: complex
+
+
+class MassProcResult(NamedTuple):
+    """
+    remote_combination:
+        list of remote tag name
+    impedance:
+        impedance tensor
+    invalid_time:
+        list of discared indices in Fourier coefficients
+    error:
+        impedance error estimation
+    transfer_mag:
+        transfert from remote channels to local mag
+    """
+    remote_combination: list
+    impedance: complex
+    invalid_time: int
+    error: float
+    transfer_mag: complex
 
 
 def impedance_mass_proc(
@@ -132,6 +165,36 @@ def impedance(
 
     mest_opts = dict(mest_opts) if mest_opts else {}
 
+    l_z, l_ivt, l_err, l_T = [], [], [], []
+    for freq in l_freq:
+        res = _impedance(
+            freq, data,
+            weights, prefilter,
+            fourier_opts,
+            remote, remote_weights, remote_prefilter,
+            tag_elec, tag_mag,
+            mest_opts,
+            real_pb,
+            silent_fail,
+        )
+        l_z.append(res.impedance)
+        l_T.append(res.transfer_mag)
+        l_ivt.append(res.invalid_time)
+        l_err.append(res.error)
+
+    return ImpedanceResult(np.array(l_z), l_ivt, np.array(l_err), np.array(l_T))
+
+
+def _impedance(
+    freq, data,
+    weights, prefilter,
+    fourier_opts,
+    remote, remote_weights, remote_prefilter,
+    tag_elec, tag_mag,
+    mest_opts,
+    real_pb,
+    silent_fail,
+):
     if real_pb:
         _transfer_function = transfer_function_real_prob
     else:
@@ -142,83 +205,75 @@ def impedance(
         remote_weights = remote_weights or weights
         remote_prefilter = remote_prefilter or prefilter
 
-    l_z, l_ivt, l_err, l_T = [], [], [], []
-    for freq in l_freq:
-        print(f"starting frequency {freq:g}")
-        fail_at_first_stage = False
-        coeffs, (l_Nw, l_Lw, l_shift) = data.fourier_coefficients(freq, **fourier_opts)
-        e = [coeffs[i] for i in data.tags[tag_elec]]
-        b = [coeffs[i] for i in data.tags[tag_mag]]
-        ## First stage
-        if remote:
-            br = [coeffs[i] for i in data.tags[remote_name]]
-            remote_ivid = apply_prefilter(b, br, remote_prefilter, None)
-            try:
-                T, ivT = _transfer_function(b, br, remote_weights,
-                                            invalid_idx=remote_ivid, **mest_opts)
-            # TODO: catch only NonConvergence and (pas assez de poids ???)
-            except Exception as ex:
-                print(ex)
-                fail_at_first_stage = True
-                if not silent_fail:
-                    raise
-            else:
-                be = T.dot(br)
-                merged_ivT = reduce(np.union1d, ivT, np.empty(0, dtype=int))
-                ivid_1 = len(e) * [merged_ivT]
+    print(f"starting frequency {freq:g}")
+    fail_at_first_stage = False
+    coeffs, (l_Nw, l_Lw, l_shift) = data.fourier_coefficients(freq, **fourier_opts)
+    e = [coeffs[i] for i in data.tags[tag_elec]]
+    b = [coeffs[i] for i in data.tags[tag_mag]]
+    ## First stage
+    if remote:
+        br = [coeffs[i] for i in data.tags[remote_name]]
+        remote_ivid = apply_prefilter(b, br, remote_prefilter, None)
+        try:
+            T, ivT = _transfer_function(b, br, remote_weights,
+                                        invalid_idx=remote_ivid, **mest_opts)
+        # TODO: catch only NonConvergence and (pas assez de poids ???)
+        except Exception as ex:
+            print(ex)
+            fail_at_first_stage = True
+            if not silent_fail:
+                raise
         else:
-            T = np.empty((len(b), 0))
-            T[:] = np.nan
-            be = b
-            ivid_1 = None
-        ## Second stage
-        fail_at_second_stage = False
-        if fail_at_first_stage:
+            be = T.dot(br)
+            merged_ivT = reduce(np.union1d, ivT, np.empty(0, dtype=int))
+            ivid_1 = len(e) * [merged_ivT]
+    else:
+        T = np.empty((len(b), 0))
+        T[:] = np.nan
+        be = b
+        ivid_1 = None
+    ## Second stage
+    fail_at_second_stage = False
+    if fail_at_first_stage:
+        fail_at_second_stage = True
+    else:
+        ivid_2 = apply_prefilter(e, be, prefilter, ivid_1)
+        try:
+            z, ivid = _transfer_function(e, be, weights,
+                                         invalid_idx=ivid_2, **mest_opts)
+        # TODO: catch only NonConvergence and (pas assez de poids ???)
+        except Exception as ex:
+            print(ex)
             fail_at_second_stage = True
-        else:
-            ivid_2 = apply_prefilter(e, be, prefilter, ivid_1)
-            try:
-                z, ivid = _transfer_function(e, be, weights,
-                                             invalid_idx=ivid_2, **mest_opts)
-            # TODO: catch only NonConvergence and (pas assez de poids ???)
-            except Exception as ex:
-                print(ex)
-                fail_at_second_stage = True
-                if not silent_fail:
-                    raise
-        if fail_at_second_stage:
-            nbr = len(br) if remote else 0
-            z, ivid, ivt = np.array([[np.nan]*len(b)]*len(e)), None, ()
-            T = np.empty((len(b),nbr))
-            T[:] = np.nan
-        else:
-            ivt = []
-            for ivid_line in ivid:
-                ivt_line = np.empty(len(ivid_line))
-                start = 0
-                for s, (Nw, Lw, shift) in zip(data.signals, zip(*(l_Nw, l_Lw, l_shift))):
-                    mask = ivid_line < Nw
-                    ii = ivid_line[mask]
-                    ivid_line = ivid_line[~mask] - Nw
-                    res = (shift * ii + 0.5 * Lw) / s.sampling_rate + s.start
-                    ivt_line[start:start+len(res)] = res
-                    start += len(res)
-                ivt.append(ivt_line)
-            ivt = tuple(ivt)
+            if not silent_fail:
+                raise
+    if fail_at_second_stage:
+        nbr = len(br) if remote else 0
+        z, ivid, ivt = np.array([[np.nan]*len(b)]*len(e)), None, ()
+        T = np.empty((len(b),nbr))
+        T[:] = np.nan
+    else:
+        ivt = []
+        for ivid_line in ivid:
+            ivt_line = np.empty(len(ivid_line))
+            start = 0
+            for s, (Nw, Lw, shift) in zip(data.signals, zip(*(l_Nw, l_Lw, l_shift))):
+                mask = ivid_line < Nw
+                ii = ivid_line[mask]
+                ivid_line = ivid_line[~mask] - Nw
+                res = (shift * ii + 0.5 * Lw) / s.sampling_rate + s.start
+                ivt_line[start:start+len(res)] = res
+                start += len(res)
+            ivt.append(ivt_line)
+        ivt = tuple(ivt)
 
+    ## error estimate
+    if fail_at_second_stage:
+        err = np.nan * z
+    else:
+        err = transfer_error(e, be, z, ivid)
 
-        l_z.append(z)
-        l_T.append(T)
-        l_ivt.append(ivt)
-        ## error estimate
-        if fail_at_second_stage:
-            err = np.nan * z
-        else:
-            err = transfer_error(e, be, z, ivid)
-        l_err.append(err)
-
-    # return np.array(l_z), l_ivt, np.array(l_err)
-    return ImpedanceResult(np.array(l_z), l_ivt, np.array(l_err), np.array(l_T))
+    return ImpedanceResult(z, ivt, err, T)
 
 
 def prefilter_values(
@@ -437,9 +492,9 @@ def _prepare_pattern(pattern):
 
     pattern = os.path.normpath(pattern)
 
-    rep = re.sub('{.*?}', flag, pattern)
-    rep = re.sub('\*\*', doublestar, rep)
-    rep = re.sub('\*', singlestar, rep)
+    rep = re.sub(r'{.*?}', flag, pattern)
+    rep = re.sub(r'\*\*', doublestar, rep)
+    rep = re.sub(r'\*', singlestar, rep)
     rep = fnmatch.translate(rep)
     rep = re.sub(re.escape(flag), p0, rep)
 
