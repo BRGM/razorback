@@ -64,6 +64,7 @@ def time_to_freq(data, sampling_freq, freq, Nper, overlap, window=None, compute=
         window = window(Lw)
     assert window is None or window.shape == (Lw,)
 
+    data = (da.asarray(y) for y in data)
     sw_views = [
         da.overlap.sliding_window_view(y, Lw)[::shift]
         for y in data
