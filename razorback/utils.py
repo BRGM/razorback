@@ -195,6 +195,9 @@ def _impedance(
     real_pb,
     silent_fail,
 ):
+
+    # TODO: cleaning structure with `return empty` when fails
+
     if real_pb:
         _transfer_function = transfer_function_real_prob
     else:
@@ -205,9 +208,22 @@ def _impedance(
         remote_weights = remote_weights or weights
         remote_prefilter = remote_prefilter or prefilter
 
+    Ne = len(data.tags[tag_elec])
+    Nb = len(data.tags[tag_mag])
+    Nr = len(data.tags[remote_name]) if remote else 0
+    empty = ImpedanceResult(
+        np.tile(np.nan,(Nb, Ne)),
+        (),
+        np.tile(np.nan,(Nb, Ne)),
+        np.tile(np.nan,(Nb, Nr)),
+    )
+
     print(f"starting frequency {freq:g}")
     fail_at_first_stage = False
-    coeffs, (l_Nw, l_Lw, l_shift) = data.fourier_coefficients(freq, **fourier_opts)
+    try:
+        coeffs, (l_Nw, l_Lw, l_shift) = data.fourier_coefficients(freq, **fourier_opts)
+    except Exception:
+        return empty
     e = [coeffs[i] for i in data.tags[tag_elec]]
     b = [coeffs[i] for i in data.tags[tag_mag]]
     ## First stage
