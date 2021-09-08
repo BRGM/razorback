@@ -628,8 +628,6 @@ class SignalSet(object):
                 )
                 added[start:stop] = True
         res |= self.select_runs(np.where(~added))
-        print(self)
-        print(res)
         return res
  
 
