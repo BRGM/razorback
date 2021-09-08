@@ -59,7 +59,7 @@ class MassProcResult(NamedTuple):
 
 
 def impedance_mass_proc(
-    data, remote_names,
+    inventory, remote_names,
     l_freq, l_interval,
     impedance_opts,
 ):
@@ -68,7 +68,7 @@ def impedance_mass_proc(
 
     TODO: doc
 
-    data: SignalSet
+    inventory: Inventory
         tags:
             'E' -> local elec
             'B' -> local magn
@@ -79,9 +79,6 @@ def impedance_mass_proc(
 
     """
 
-    E = data.tags.E
-    B = data.tags.B
-
     remote_combination = list(itertools.product(*[
         (None, e) for e in range(len(remote_names))
     ]))
@@ -89,20 +86,14 @@ def impedance_mass_proc(
     ptl_z, ptl_ivt, ptl_err, ptl_T = [], [], [], []
     l_rcomb = []
     for k, rindices in enumerate(remote_combination):
-        rcomb = [data.tags[remote_names[e]]
-                 for e in rindices if e is not None]
-        Bremote = sum(rcomb, ())
 
-        #indices = range(data.nb_channels)
-        #data = data.select(*indices, E=E, B=B, Bremote=Bremote)
-
-        #data = data.select_channels(E+B+Bremote)
+        remote_tags = [remote_names[e] for e in rindices if e is not None]
+        rinv = inventory.filter('E', 'B')
+        if remote_tags:
+            rinv += inventory.extract_groups([('Bremote', remote_tags)])
+        data = rinv.pack()
 
         options = dict(impedance_opts)
-        if Bremote:
-            options['remote'] = 'Bremote'
-            data.tags['Bremote'] = Bremote
-
         tl_z, tl_ivt, tl_err, tl_T = [], [], [], []
         for i, interval in enumerate(l_interval):
             n, m = map(len, [remote_combination, l_interval])

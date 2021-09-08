@@ -1003,6 +1003,17 @@ class Inventory(object):
         keys = set().union(*(fnmatch.filter(self.tags, p) for p in patterns))
         return self.select_channels(*keys)
 
+    def extract_groups(self, group_tags):
+        """
+        group_tags: [(new_tag, [*old_tags]), ...]
+        """
+        new_inv = type(self)()
+        for new_tag, old_tags in group_tags:
+            sig = self.filter(*old_tags).pack()
+            sig.tags[new_tag] = sum((sig.tags[t] for t in old_tags), ())
+            new_inv.append(sig)
+        return new_inv
+
     def _join_merge(self):
         if not self:
             return type(self)._type({})
@@ -1031,8 +1042,6 @@ class Inventory(object):
 
         Since the result is a SignalSet, it will be composed of disjoint synchronous runs,
         each run covering all the channels.
-
-        None is returned if no group of signals can satisfied the rules above.
 
         """
         if not keep_multi_tags:
