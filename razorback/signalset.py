@@ -863,11 +863,12 @@ class SyncSignal(object):
             shift: index shift beetwen windows
 
         """
+        calibrations = [f_calib(freq) for f_calib in self.calibrations]
+        assert not any(v is None for v in calibrations)
         coeffs, discrete_window_data = time_to_freq(
             self.data, self.sampling_rate, freq, Nper, overlap, window, **kwds
         )
-        coeffs = [c / calib(freq)
-                  for (c, calib) in zip(coeffs, self.calibrations)]
+        coeffs = [c / calib for (c, calib) in zip(coeffs, calibrations)]
         return coeffs, discrete_window_data
 
 

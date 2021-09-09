@@ -71,6 +71,8 @@ def time_to_freq(data, sampling_freq, freq, Nper, overlap, window=None, compute=
     ]
     pulsation = 2 * np.pi * nf
     x = np.exp((-1j * pulsation) * da.arange(Lw)) * (2/Lw)
+    if window is not None:
+        x *= window
     result = [da.dot(x, y.T) for y in sw_views]
     if compute:
         result = da.compute(*result)
