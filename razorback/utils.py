@@ -157,7 +157,7 @@ def impedance(
     l_z, l_ivt, l_err, l_T = [], [], [], []
     for freq in l_freq:
         res = _impedance(
-            freq, data,
+            data, freq,
             weights, prefilter,
             fourier_opts,
             remote, remote_weights, remote_prefilter,
@@ -175,7 +175,7 @@ def impedance(
 
 
 def _impedance(
-    freq, data,
+    data, freq,
     weights, prefilter,
     fourier_opts,
     remote, remote_weights, remote_prefilter,
