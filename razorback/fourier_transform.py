@@ -4,6 +4,7 @@
 
 import numpy as np
 from scipy import signal
+import dask.array as da
 
 
 __all__ = ['time_to_freq', 'slepian_window']
@@ -20,7 +21,7 @@ def slepian_window(tau):
     return _slepian
 
 
-def time_to_freq(data, sampling_freq, freq, Nper, overlap, window=None):
+def time_to_freq(data, sampling_freq, freq, Nper, overlap, window=None, compute=True):
     """ Compute the fourier coefficients on sliding windows.
 
     Parameters
@@ -63,10 +64,22 @@ def time_to_freq(data, sampling_freq, freq, Nper, overlap, window=None):
         window = window(Lw)
     assert window is None or window.shape == (Lw,)
 
-    result = [
-        ft(sliding_window(y, Nw, Lw, shift).T, freq, sampling_freq, window)
+    data = (da.asarray(y) for y in data)
+    sw_views = [
+        da.overlap.sliding_window_view(y, Lw)[::shift]
         for y in data
     ]
+    pulsation = 2 * np.pi * nf
+    x = np.exp((-1j * pulsation) * da.arange(Lw)) * (2/Lw)
+    if window is not None:
+        x *= window
+    result = [da.dot(x, y.T) for y in sw_views]
+    if compute:
+        result = da.compute(*result)
+
+    length = set(len(e) for e in result)
+    assert len(length) == 1
+    Nw = length.pop()
 
     return result, (Nw, Lw, shift)
 
@@ -95,29 +108,6 @@ def discrete_window(size, normalized_freq, Nper, overlap):
     return int(Nw), int(Lw), shift
 
 
-def sliding_window(arr, nb_window, size_window, shift):
-    """ sliding window over arr
-
-    arr must be 1d
-    result is 2d: result[i] is the i-th window
-
-    >>> sliding_window(np.arange(15), 4, 3, 2)
-    array([[0, 1, 2],
-           [2, 3, 4],
-           [4, 5, 6],
-           [6, 7, 8]])
-
-    """
-    assert arr.ndim == 1, "array must be 1D"
-    min_ = (nb_window - 1) * shift + size_window
-    assert len(arr) >= min_, "array is too small (min=%d)" % min_
-    size = arr.itemsize
-    return np.lib.stride_tricks.as_strided(
-        arr, shape=(nb_window, size_window),
-        strides=(shift*size, size)
-    )
-
-
 def slepian(N, tau, N_MAX=1000):
     """ return the slepian window of size N with main lobe end at +/- tau
 
@@ -140,6 +130,52 @@ def slepian(N, tau, N_MAX=1000):
         res = np.interp(np.arange(N), a * np.arange(N_MAX), ref)
     return res
 
+#############################
+
+def time_to_freq_old(data, sampling_freq, freq, Nper, overlap, window=None):
+    length = set(len(e) for e in data)
+    assert len(length) == 1, "all data must have the same length"
+    Ntot = length.pop()
+
+    nf = np.true_divide(freq, sampling_freq)
+    Nw, Lw, shift = discrete_window(Ntot, nf, Nper, overlap)
+
+    if callable(window):
+        window = window(Lw)
+    assert window is None or window.shape == (Lw,)
+
+    result = [
+        ft(sliding_window(y, Nw, Lw, shift).T, freq, sampling_freq, window)
+        for y in data
+    ]
+
+    return result, (Nw, Lw, shift)
+
+
+def sliding_window(arr, nb_window, size_window, shift):
+    """ sliding window over arr
+
+    arr must be 1d
+    result is 2d: result[i] is the i-th window
+
+    >>> sliding_window(np.arange(15), 4, 3, 2)
+    array([[0, 1, 2],
+           [2, 3, 4],
+           [4, 5, 6],
+           [6, 7, 8]])
+
+    """
+    assert arr.ndim == 1, "array must be 1D"
+    min_ = (nb_window - 1) * shift + size_window
+    assert len(arr) >= min_, "array is too small (min=%d)" % min_
+    size = arr.itemsize
+    return np.lib.stride_tricks.as_strided(
+        # arr[:min_+1],
+        arr,
+        shape=(nb_window, size_window),
+        strides=(shift*size, size)
+    )
+
 
 def ft(y, freq, sampling_freq=1., window=None):
     """ return the complex Fourier coefficient of y at freq
@@ -155,3 +191,4 @@ def ft(y, freq, sampling_freq=1., window=None):
     if window is not None:
         x *= window
     return x.dot(y) / N * 2
+

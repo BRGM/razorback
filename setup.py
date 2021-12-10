@@ -34,5 +34,6 @@ setup(
     long_description=(PKG/"README.md").read_text(),
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=('tests', 'docs')),
-    install_requires=['numpy', 'scipy', 'dask[array]'],
+    install_requires=['numpy', 'scipy', 'dask[array]', 'click'],
+    entry_points = {'console_scripts': ['rzb=razorback.cli:cli']},
 )

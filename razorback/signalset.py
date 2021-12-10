@@ -555,7 +555,7 @@ class SignalSet(object):
         signals = [s for s in signals if s.size > 1]
         return type(self)(self.tags, *signals)
 
-    def fourier_coefficients(self, freq, Nper, overlap, window):
+    def fourier_coefficients(self, freq, Nper, overlap, window, **kwds):
         """ compute the fourier coefficients at freq of sliding windows
 
         coeffs, discrete_window_data = signal.fourier_coefficients(freq, Nper, overlap, window)
@@ -593,7 +593,7 @@ class SignalSet(object):
         """
 
         l_coeffs, l_windata = zip(*(
-            ss.fourier_coefficients(freq, Nper, overlap, window)
+            ss.fourier_coefficients(freq, Nper, overlap, window, **kwds)
             for ss in self.signals
         ))
 
@@ -608,23 +608,28 @@ class SignalSet(object):
     def merge_consecutive_runs(self):
         """ return a new SignalSet where consecutive runs are merged into one.
 
-        EXPERIMENTAL
-
         !!! calibrations taken from the first run
 
         """
-        warnings.warn("SignalSet.merge_consecutive_runs() is experimental")
         res = SignalSet(self.tags)
+        added = np.zeros(self.nb_runs, dtype=bool)
         for sampling in np.unique(self.sampling_rates):
-            ss = self.select_runs(self.sampling_rates == sampling)
-            is_consecutive = np.isclose(ss.sizes[:-1]/sampling, ss.starts[1:] - ss.starts[:-1])
+            mask = self.sampling_rates == sampling
+            start, stop = np.where(mask[:, None], self.intervals, np.nan).T
+            is_consecutive = np.isclose(1/sampling, start[1:] - stop[:-1])
             for start, stop in _group_indices(is_consecutive):
-                group = ss.select_runs(slice(start, stop))
-                data = [np.concatenate([v.data[i] for v in group.signals])
-                        for i in range(group.nb_channels)]
-                res |= SyncSignal(data, sampling, group.starts[0], group.signals[0].calibrations)
+                group = self.select_runs(slice(start, stop))
+                data = [
+                    np.concatenate([v.data[i] for v in group.signals])
+                    for i in range(group.nb_channels)
+                ]
+                res |= SyncSignal(
+                    data, sampling, group.starts[0], group.signals[0].calibrations
+                )
+                added[start:stop] = True
+        res |= self.select_runs(np.where(~added))
         return res
-
+ 
 
 def _group_indices(bool_arr):
     """
@@ -770,12 +775,13 @@ class SyncSignal(object):
             start=self.start,
         )
 
-    def _time_to_index(self, time):
+    def _time_to_index(self, time, round_to='right'):
         " convert time to sample index "
-       # TODO: to test
+        round_to = round_to.lower()
+        assert round_to in ('left', 'right')
+        round_ = dict(left=np.floor, right=np.ceil)[round_to]
         index = (time - self.start) * self.sampling_rate
-        #assert index.is_integer()
-        return int(index)
+        return int(round_(index))
 
     def _index_to_time(self, index):
         " convert sample index to time "
@@ -817,11 +823,11 @@ class SyncSignal(object):
             stop = max(self.start, stop)
             start = min(self.stop, start)
             stop = min(self.stop, stop)
-        i_start = self._time_to_index(start)
-        i_stop = self._time_to_index(stop)
+        i_start = self._time_to_index(start, round_to="right")
+        i_stop = self._time_to_index(stop, round_to="left")
         return self.extract_i(i_start, i_stop, strict, include_last=True)
 
-    def fourier_coefficients(self, freq, Nper, overlap, window):
+    def fourier_coefficients(self, freq, Nper, overlap, window, **kwds):
         """ compute the fourier coefficients at freq of sliding windows
 
         coeffs, discrete_window_data = signal.fourier_coefficients(freq, Nper, overlap, window)
@@ -857,11 +863,12 @@ class SyncSignal(object):
             shift: index shift beetwen windows
 
         """
+        calibrations = [f_calib(freq) for f_calib in self.calibrations]
+        assert not any(v is None for v in calibrations)
         coeffs, discrete_window_data = time_to_freq(
-            self.data, self.sampling_rate, freq, Nper, overlap, window
+            self.data, self.sampling_rate, freq, Nper, overlap, window, **kwds
         )
-        coeffs = [c / calib(freq)
-                  for (c, calib) in zip(coeffs, self.calibrations)]
+        coeffs = [c / calib for (c, calib) in zip(coeffs, calibrations)]
         return coeffs, discrete_window_data
 
 
@@ -997,6 +1004,17 @@ class Inventory(object):
         keys = set().union(*(fnmatch.filter(self.tags, p) for p in patterns))
         return self.select_channels(*keys)
 
+    def extract_groups(self, group_tags):
+        """
+        group_tags: [(new_tag, [*old_tags]), ...]
+        """
+        new_inv = type(self)()
+        for new_tag, old_tags in group_tags:
+            sig = self.filter(*old_tags).pack()
+            sig.tags[new_tag] = sum((sig.tags[t] for t in old_tags), ())
+            new_inv.append(sig)
+        return new_inv
+
     def _join_merge(self):
         if not self:
             return type(self)._type({})
@@ -1026,8 +1044,6 @@ class Inventory(object):
         Since the result is a SignalSet, it will be composed of disjoint synchronous runs,
         each run covering all the channels.
 
-        None is returned if no group of signals can satisfied the rules above.
-
         """
         if not keep_multi_tags:
             tags = {t for s in self for t in self.tags
@@ -1038,12 +1054,11 @@ class Inventory(object):
         freqs, tags = list(self.sampling_rates), self.tags
         sigs = [self.select_runs(f == f0 for f in freqs)._join_merge()
                 for f0 in set(itertools.chain(*freqs))]
-
         sigs = [s for s in sigs if s.nb_runs and tags.issubset(s.tags)]
-        return type(self)._type.join(*sigs) if sigs else None
 
-        # sigs = [s for s in sigs if tags.issubset(s.tags)]
-        # return type(self)._type(*sigs)
+        if sigs:
+            return type(self)._type.join(*sigs).merge_consecutive_runs()
+        else:
+            return SignalSet({})
 
     merge = _join_merge
-    # merge = pack

@@ -14,6 +14,7 @@ Its primary application field is magnetotelluric (MT) and other electromagnetic 
    citation
    overview
    tutorials/index
+   script
 
 
 .. toctree::
