@@ -2,15 +2,15 @@
 """
 
 try:
+    import razorback_plus as plus
+except ModuleNotFoundError:
+    plus = None
+
+try:
     from . import _version
     __version__ = _version.version
 except ImportError:
     __version__ = None
-
-try:
-    import razorback_plus as plus
-except ModuleNotFoundError:
-    plus = None
 
 
 from .errors import *
