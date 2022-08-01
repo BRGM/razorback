@@ -123,6 +123,7 @@ def impedance(
     mest_opts=None,
     real_pb=False,
     silent_fail=True,
+    keep_invalid_times=False,
 ):
     """
     TODO
@@ -165,6 +166,7 @@ def impedance(
             mest_opts,
             real_pb,
             silent_fail,
+            keep_invalid_times,
         )
         l_z.append(res.impedance)
         l_T.append(res.transfer_mag)
@@ -183,6 +185,7 @@ def _impedance(
     mest_opts,
     real_pb,
     silent_fail,
+    keep_invalid_times,
 ):
 
     # TODO: cleaning structure with `return empty` when fails
@@ -257,7 +260,7 @@ def _impedance(
         z, ivid, ivt = np.array([[np.nan]*len(b)]*len(e)), None, ()
         T = np.empty((len(b),nbr))
         T[:] = np.nan
-    else:
+    elif keep_invalid_times:
         ivt = []
         for ivid_line in ivid:
             ivt_line = np.empty(len(ivid_line))
@@ -271,6 +274,8 @@ def _impedance(
                 start += len(res)
             ivt.append(ivt_line)
         ivt = tuple(ivt)
+    else:
+        ivt = tuple(np.empty(0) for ivid_line in ivid)
 
     ## error estimate
     if fail_at_second_stage:
