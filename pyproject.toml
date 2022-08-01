@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools >= 61.0.0", "wheel", "setuptools_scm>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "razorback"
+description = 'Robust estimation of linear response functions'
+authors = [
+    {name = "Farid Smai", email = "f.smai@brgm.fr"},
+]
+license = {text = "GNU GPLv3 License"}
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+]
+readme = "README.md"
+dynamic = ["version"]
+requires-python = ">=3.6"
+dependencies = [
+    "numpy",
+    "scipy",
+    "dask[array]",
+    "click",
+]
+
+[project.urls]
+Homepage = "https://github.com/BRGM/razorback"
+Documentation = "https://razorback.readthedocs.io"
+Source = "https://github.com/BRGM/razorback"
+
+[project.scripts]
+rzb = "razorback.cli:cli"
+
+[tool.setuptools.dynamic]
+version = {attr = "razorback._version.version"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
+write_to = "src/razorback/_version.py"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+doctest_optionflags = "NORMALIZE_WHITESPACE IGNORE_EXCEPTION_DETAIL"
+addopts = "--doctest-glob='*.doctest'"

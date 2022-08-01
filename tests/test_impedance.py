@@ -3,11 +3,12 @@ import razorback as rzb
 
 
 def make_data(factor=2, nsr=1e-12, size=5000):
+    rg = np.random.default_rng(12345)
     time = np.linspace(0, 10, size)
     inputs = np.sin((time[-1]-time)**2)
     outputs = factor * inputs
-    inputs += np.random.normal(scale=nsr, size=inputs.shape)
-    outputs += np.random.normal(scale=nsr, size=outputs.shape)
+    inputs += rg.normal(scale=nsr, size=inputs.shape)
+    outputs += rg.normal(scale=nsr, size=outputs.shape)
     data = rzb.SignalSet({'B': 0, 'E': 1}, rzb.SyncSignal([inputs, outputs], 1, 0))
     return data
 
@@ -18,15 +19,35 @@ def test_scalar_factor():
 
     res = rzb.utils.impedance(data, freqs)
     np.testing.assert_allclose(res.impedance, 2)
+    assert np.shape(res.invalid_time)[:2] == (5, 1)
+    assert [[np.shape(ivt) for ivt in ivt_line] for ivt_line in res.invalid_time
+    ] == [[(0,)], [(0,)], [(0,)], [(0,)], [(0,)]]
 
     res = rzb.utils.impedance(data, freqs, weights=rzb.weights.mest_weights)
     np.testing.assert_allclose(res.impedance, 2)
+    assert np.shape(res.invalid_time)[:2] == (5, 1)
+    assert [[np.shape(ivt) for ivt in ivt_line] for ivt_line in res.invalid_time
+    ] == [[(0,)], [(0,)], [(0,)], [(0,)], [(0,)]]
 
     res = rzb.utils.impedance(data, freqs, weights=rzb.weights.bi_weights(0.1, 3, 1))
     np.testing.assert_allclose(res.impedance, 2)
+    assert np.shape(res.invalid_time)[:2] == (5, 1)
+    assert [[np.shape(ivt) for ivt in ivt_line] for ivt_line in res.invalid_time
+    ] == [[(0,)], [(0,)], [(0,)], [(0,)], [(0,)]]
+
+    res = rzb.utils.impedance(data, freqs, weights=rzb.weights.bi_weights(0.1, 3, 1),
+        keep_invalid_times=True,
+    )
+    np.testing.assert_allclose(res.impedance, 2)
+    assert np.shape(res.invalid_time)[:2] == (5, 1)
+    assert [[np.shape(ivt) for ivt in ivt_line] for ivt_line in res.invalid_time
+    ] == [[(75,)], [(16,)], [(30,)], [(165,)], [(530,)]]
 
     res = rzb.utils.impedance(data, freqs, remote='B')
     np.testing.assert_allclose(res.impedance, 2)
+    assert np.shape(res.invalid_time)[:2] == (5, 1)
+    assert [[np.shape(ivt) for ivt in ivt_line] for ivt_line in res.invalid_time
+    ] == [[(0,)], [(0,)], [(0,)], [(0,)], [(0,)]]
 
 
 def test_fail_freq_to_big():

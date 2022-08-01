@@ -1,7 +1,11 @@
 """ razorback: tools for robust estimations of transfer functions.
 """
 
-__version__ = "0.4.0"
+try:
+    from . import _version
+    __version__ = _version.version
+except ImportError:
+    __version__ = None
 
 try:
     import razorback_plus as plus
