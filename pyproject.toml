@@ -26,6 +26,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/BRGM/razorback"
 Documentation = "https://razorback.readthedocs.io"
+Source = "https://github.com/BRGM/razorback"
 
 [project.scripts]
 rzb = "razorback.cli:cli"
