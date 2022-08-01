@@ -34,10 +34,10 @@ rzb = "razorback.cli:cli"
 version = {attr = "razorback._version.version"}
 
 [tool.setuptools.packages.find]
-exclude = ["tests", "docs"]
+where = ["src"]
 
 [tool.setuptools_scm]
-write_to = "razorback/_version.py"
+write_to = "src/razorback/_version.py"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
