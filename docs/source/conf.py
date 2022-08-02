@@ -30,7 +30,7 @@ def run_apidoc(_):
     import os
     import shutil
     cur_dir = os.path.dirname(__file__)
-    module = os.path.join(cur_dir, '../../razorback')
+    module = os.path.join(cur_dir, '../../src/razorback')
     output_path = os.path.join(cur_dir, 'api')
     shutil.rmtree(output_path, ignore_errors=True)
     main(['--separate',
@@ -99,7 +99,7 @@ version = '.'.join(release.split('.')[:2])
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
