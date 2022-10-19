@@ -19,6 +19,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install setuptools>=61.0.0 wheel build
         pip install -r requirements.txt
+        pip install .
     - name: Test with pytest
       run: |
         pytest
