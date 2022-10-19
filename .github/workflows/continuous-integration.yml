@@ -1,5 +1,4 @@
-name: Publish Python 🐍 distributions 📦 to TestPyPI
-
+name: Continuous Integration
 on: push
 
 jobs:
