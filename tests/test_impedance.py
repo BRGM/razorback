@@ -19,19 +19,19 @@ def test_scalar_factor():
 
     res = rzb.utils.impedance(data, freqs)
     np.testing.assert_allclose(res.impedance, 2)
-    assert np.shape(res.invalid_time)[:2] == (5, 1)
+    assert [len(e) for e in res.invalid_time] == [1] * 5
     assert [[np.shape(ivt) for ivt in ivt_line] for ivt_line in res.invalid_time
     ] == [[(0,)], [(0,)], [(0,)], [(0,)], [(0,)]]
 
     res = rzb.utils.impedance(data, freqs, weights=rzb.weights.mest_weights)
     np.testing.assert_allclose(res.impedance, 2)
-    assert np.shape(res.invalid_time)[:2] == (5, 1)
+    assert [len(e) for e in res.invalid_time] == [1] * 5
     assert [[np.shape(ivt) for ivt in ivt_line] for ivt_line in res.invalid_time
     ] == [[(0,)], [(0,)], [(0,)], [(0,)], [(0,)]]
 
     res = rzb.utils.impedance(data, freqs, weights=rzb.weights.bi_weights(0.1, 3, 1))
     np.testing.assert_allclose(res.impedance, 2)
-    assert np.shape(res.invalid_time)[:2] == (5, 1)
+    assert [len(e) for e in res.invalid_time] == [1] * 5
     assert [[np.shape(ivt) for ivt in ivt_line] for ivt_line in res.invalid_time
     ] == [[(0,)], [(0,)], [(0,)], [(0,)], [(0,)]]
 
@@ -39,13 +39,13 @@ def test_scalar_factor():
         keep_invalid_times=True,
     )
     np.testing.assert_allclose(res.impedance, 2)
-    assert np.shape(res.invalid_time)[:2] == (5, 1)
+    assert [len(e) for e in res.invalid_time] == [1] * 5
     assert [[np.shape(ivt) for ivt in ivt_line] for ivt_line in res.invalid_time
     ] == [[(75,)], [(16,)], [(30,)], [(165,)], [(530,)]]
 
     res = rzb.utils.impedance(data, freqs, remote='B')
     np.testing.assert_allclose(res.impedance, 2)
-    assert np.shape(res.invalid_time)[:2] == (5, 1)
+    assert [len(e) for e in res.invalid_time] == [1] * 5
     assert [[np.shape(ivt) for ivt in ivt_line] for ivt_line in res.invalid_time
     ] == [[(0,)], [(0,)], [(0,)], [(0,)], [(0,)]]
 
