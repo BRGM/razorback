@@ -126,6 +126,9 @@ def impedance(
     keep_invalid_times=False,
 ):
     """
+
+    Uses `razorback.mestimator.transfer_error()` for error estimation.
+
     TODO
 
     data: SignalSet
