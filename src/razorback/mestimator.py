@@ -21,7 +21,8 @@ __all__ = ['transfer_function', 'transfer_error']
 def transfer_error(outputs, inputs, transfer, invalid_idx):
     """
 
-    from Egbert, Booker (1986)
+    from [Egbert, Booker (1986)] Appendix A.2
+    https://doi.org/10.1111/j.1365-246X.1986.tb04552.x
 
     """
     inputs = np.array(inputs, copy=False)
