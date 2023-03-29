@@ -88,12 +88,15 @@ def impedance_mass_proc(
     for k, rindices in enumerate(remote_combination):
 
         remote_tags = [remote_names[e] for e in rindices if e is not None]
+        options = dict(impedance_opts)
         rinv = inventory.filter('E', 'B')
         if remote_tags:
             rinv += inventory.extract_groups([('Bremote', remote_tags)])
+            options['remote'] = 'Bremote'
+        else:
+            options['remote'] = None
         data = rinv.pack()
 
-        options = dict(impedance_opts)
         tl_z, tl_ivt, tl_err, tl_T = [], [], [], []
         for i, interval in enumerate(l_interval):
             n, m = map(len, [remote_combination, l_interval])
