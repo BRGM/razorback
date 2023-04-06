@@ -62,6 +62,7 @@ def impedance_mass_proc(
     inventory, remote_names,
     l_freq, l_interval,
     impedance_opts,
+    combines_remotes=True,
 ):
     """ massive processing with multiple remote
     all combination of remote
@@ -79,9 +80,12 @@ def impedance_mass_proc(
 
     """
 
-    remote_combination = list(itertools.product(*[
-        (None, e) for e in range(len(remote_names))
-    ]))
+    if combines_remotes:
+        remote_combination = list(itertools.product(*[
+            (None, e) for e in range(len(remote_names))
+        ]))
+    else:
+        remote_combination = [tuple(range(len(remote_names)))]
 
     ptl_z, ptl_ivt, ptl_err, ptl_T = [], [], [], []
     l_rcomb = []
