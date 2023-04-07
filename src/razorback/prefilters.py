@@ -27,7 +27,7 @@ class CoefficientOfDeterminationFilter(object):
         size = self._size
         coeff_det = self.coeff_determination
         breshape = lambda arr: arr[:len(arr)-(len(arr) % size)].reshape(
-            (divmod(len(arr), size)[0], size) + (-1,) * (arr.ndim-1)
+            (divmod(len(arr), size)[0], size) + arr.shape[1:]
         )
         cod = np.zeros(len(e))
         queue = size + (len(e) % size)
