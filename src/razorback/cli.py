@@ -15,7 +15,7 @@ class PluginGroup(click.Group):
         super().__init__(*args, **kwds)
 
     def list_commands(self, ctx):
-        return sorted(super().list_commands(ctx) + list(self.extra_commands))
+        return sorted(set(super().list_commands(ctx) + list(self.extra_commands)))
 
     def get_command(self, ctx, name):
         return self.extra_commands.get(name) or super().get_command(ctx, name)
