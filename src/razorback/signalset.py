@@ -13,6 +13,7 @@ import fnmatch
 import numpy as np
 
 from .fourier_transform import time_to_freq
+from .calibrations import ConstantCalibration
 
 
 __all__ = ['SignalSet', 'SyncSignal', 'Tags', 'Inventory']
@@ -248,6 +249,11 @@ class SignalSet(object):
         self._signals = tuple(sorted(signals, key=lambda s: s.start))
         self._tags = None
         self.tags = tags
+
+    def __setstate__(self, state):
+        self._signals = state["_signals"]
+        self._tags = None
+        self.tags = state["_tags"]
 
     def __str__(self):
         ## signals
@@ -681,7 +687,8 @@ class SyncSignal(object):
         if not calibrations:
             calibrations = [1.] * len(data)
         calibrations = tuple(
-            cal if callable(cal) else (lambda cc: (lambda f: cc))(cal)
+            # cal if callable(cal) else (lambda cc: (lambda f: cc))(cal)
+            cal if callable(cal) else ConstantCalibration(cal)
             for cal in calibrations
         )
         assert len(data) == len(calibrations)

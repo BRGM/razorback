@@ -20,6 +20,35 @@ METRONIX_VERSION_PATTERN = r".*(MFS\d\d).*"
 METRONIX_ALPHA_MAP = {'MFS06': 4.0, 'MFS07': 32.0}
 
 
+class ConstantCalibration:
+    def __init__(self, value):
+        self.value = value
+
+    def __call__(self, f):
+        return self.value
+
+
+class MetronixCalibration:
+    def __init__(self, table, chopper, alpha):
+        freq = table[:, 0]
+        calib = self.cal_mp(freq, table[:, 1], table[:, 2])
+        self.tabuled = scipy.interpolate.interp1d(freq, calib, copy=False)
+        self.chopper = chopper
+        self.alpha = alpha
+        self.freq_min = freq[0]
+        self.mod_min = table[0, 1]
+
+    def __call__(self, f):
+        if f < self.freq_min and self.chopper:
+            phase = np.angle(f + 1j * self.alpha, deg=True)
+            return self.cal_mp(f, self.mod_min, phase)
+        return self.tabuled(f)
+
+    @staticmethod
+    def cal_mp(freq, module, phase):
+        return freq * module * np.exp(1j * phase * np.pi/180.)
+
+
 def metronix(filename, sampling_rate, chopper_on_limit=None, version_pattern=None, alpha_map=None):
     """ return calibration function for metronix devices
 
@@ -61,7 +90,7 @@ def metronix(filename, sampling_rate, chopper_on_limit=None, version_pattern=Non
         stop = (stop or [None])[0]
         return start, stop
 
-    def version(filename):
+    def version(filename, version_pattern):
         name = Path(filename).stem
         m = re.match(version_pattern, name)
         if m is None:
@@ -75,12 +104,6 @@ def metronix(filename, sampling_rate, chopper_on_limit=None, version_pattern=Non
         freq = table[:, 0]
         calib = cal_mp(freq, table[:, 1], table[:, 2])
         tabuled = scipy.interpolate.interp1d(freq, calib, copy=False)
-
-        vers = version(filename)
-        if vers not in alpha_map:
-            raise ValueError(
-                f"unknown version '{vers}' of calibration file '{filename.name}'"
-            )
 
         alpha = alpha_map[vers]
         freq_min = freq[0]
@@ -105,11 +128,17 @@ def metronix(filename, sampling_rate, chopper_on_limit=None, version_pattern=Non
     with open(filename, 'r') as file:
         lines = file.readlines()
 
+    vers = version(filename, version_pattern)
+    if vers not in alpha_map:
+        raise ValueError(
+            f"unknown version '{vers}' of calibration file '{filename.name}'"
+        )
+
     chopper = sampling_rate <= chopper_on_limit
     mark = 'Chopper On' if chopper else 'Chopper Off'
     start, stop = start_stop(lines, mark)
-    calib = calibration(np.loadtxt(lines[start:stop]), filename, chopper, alpha_map)
-    return calib
+
+    return MetronixCalibration(np.loadtxt(lines[start:stop]), chopper, alpha_map[vers])
 
 
 def phoenix(cts_file, level):

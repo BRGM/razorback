@@ -4,6 +4,7 @@
 
 import numpy as np
 from scipy import signal
+import dask
 import dask.array as da
 
 
@@ -74,13 +75,9 @@ def time_to_freq(data, sampling_freq, freq, Nper, overlap, window=None, compute=
     if window is not None:
         x *= window
     result = [da.dot(x, y.T) for y in sw_views]
+
     if compute:
         result = da.compute(*result)
-
-    length = set(len(e) for e in result)
-    assert len(length) == 1
-    Nw = length.pop()
-
     return result, (Nw, Lw, shift)
 
 
@@ -90,14 +87,11 @@ def discrete_window(size, normalized_freq, Nper, overlap):
     return nb_window, size_window, shift
 
     """
-   # assert 0 <= overlap <= .5
-   # assert 0 < normalized_freq <= .5
     assert 0 <= overlap <= 1
     assert 0 < normalized_freq <= .5
-    # Lw, _ = divmod(Nper, normalized_freq)
     Lw = np.ceil(Nper / float(normalized_freq))
     shift = int(Lw * (1-overlap))
-    Nw, _ = divmod(size - Lw, shift)
+    Nw = (size + shift - Lw) // shift
     if Nw < 1:
         raise ValueError(
             "Number of window < 1. "

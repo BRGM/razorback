@@ -13,6 +13,7 @@ from functools import reduce
 import itertools
 
 import numpy as np
+import dask
 
 from .mestimator import transfer_function, transfer_error
 from .fourier_transform import slepian_window
@@ -165,12 +166,31 @@ def impedance(
 
     mest_opts = dict(mest_opts) if mest_opts else {}
 
+    Ne = len(data.tags[tag_elec])
+    Nb = len(data.tags[tag_mag])
+    Nr = len(data.tags[remote]) if remote else 0
+    empty = ImpedanceResult(
+        np.tile(np.nan,(Nb, Ne)),
+        (),
+        np.tile(np.nan,(Nb, Ne)),
+        np.tile(np.nan,(Nb, Nr)),
+    )
+
     l_z, l_ivt, l_err, l_T = [], [], [], []
     for freq in l_freq:
+        try:
+            # coeffs, fourier_spec = data.fourier_coefficients(freq, **fourier_opts)
+            coeffs, fourier_spec = fourier_coefficients(data, freq, **fourier_opts)
+        except Exception:
+            l_z.append(empty.impedance)
+            l_T.append(empty.transfer_mag)
+            l_ivt.append(empty.invalid_time)
+            l_err.append(empty.error)
+            continue
         res = _impedance(
-            data, freq,
+            coeffs, data, freq,
             weights, prefilter,
-            fourier_opts,
+            fourier_spec,
             remote, remote_weights, remote_prefilter,
             tag_elec, tag_mag,
             mest_opts,
@@ -183,13 +203,19 @@ def impedance(
         l_ivt.append(res.invalid_time)
         l_err.append(res.error)
 
-    return ImpedanceResult(np.array(l_z), l_ivt, np.array(l_err), np.array(l_T))
+    return ImpedanceResult(l_z, l_ivt, l_err, l_T)
 
 
+@dask.delayed(nout=2)
+def fourier_coefficients(data, freq, **fourier_opts):
+    return data.fourier_coefficients(freq, **fourier_opts)
+
+
+@dask.delayed
 def _impedance(
-    data, freq,
+    coeffs, data, freq,
     weights, prefilter,
-    fourier_opts,
+    fourier_spec,
     remote, remote_weights, remote_prefilter,
     tag_elec, tag_mag,
     mest_opts,
@@ -210,22 +236,10 @@ def _impedance(
         remote_weights = remote_weights or weights
         remote_prefilter = remote_prefilter or prefilter
 
-    Ne = len(data.tags[tag_elec])
-    Nb = len(data.tags[tag_mag])
-    Nr = len(data.tags[remote_name]) if remote else 0
-    empty = ImpedanceResult(
-        np.tile(np.nan,(Nb, Ne)),
-        (),
-        np.tile(np.nan,(Nb, Ne)),
-        np.tile(np.nan,(Nb, Nr)),
-    )
+    l_Nw, l_Lw, l_shift = fourier_spec
 
     print(f"starting frequency {freq:g}")
     fail_at_first_stage = False
-    try:
-        coeffs, (l_Nw, l_Lw, l_shift) = data.fourier_coefficients(freq, **fourier_opts)
-    except Exception:
-        return empty
     e = [coeffs[i] for i in data.tags[tag_elec]]
     b = [coeffs[i] for i in data.tags[tag_mag]]
     ## First stage
