@@ -1,61 +1,36 @@
-name: Continuous Integration
+name: "Continuous Integration"
+
 on: push
 
 jobs:
   test:
     name: Run automatic tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0    
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.9
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install setuptools>=61.0.0 wheel build
-        pip install -r requirements.txt
-        pip install .
-    - name: Test with pytest
-      run: |
-        pytest
 
-  build-n-publish:
-    name: Build and publish Python 🐍 distributions 📦 to TestPyPI
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.9
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0    
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install setuptools>=61.0.0 wheel build
-        pip install -r requirements.txt
-        
-    - name: Build a binary wheel and a source tarball
-      run: >-
-        python -m build
-#        python setup.py bdist_wheel sdist
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
 
-#    - name: Publish package to TestPyPI
-#      uses: pypa/gh-action-pypi-publish@master
-#      with:
-#        user: __token__
-#        password: ${{ secrets.test_pypi_password }}
-#        repository_url: https://test.pypi.org/legacy/
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
 
-    - name: Publish package to PyPI
-      if: startsWith(github.event.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.pypi_password }}
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+
+      - name: Run tests
+        run: uv run pytest tests
