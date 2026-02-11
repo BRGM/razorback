@@ -1,7 +1,7 @@
 
 import pathlib
 import os
-from pkg_resources import iter_entry_points
+from importlib.metadata import entry_points
 import click
 import razorback as rzb
 
@@ -10,7 +10,7 @@ class PluginGroup(click.Group):
 
     def __init__(self, *args, **kwds):
         self.extra_commands = {
-            e.name: e.load() for e in iter_entry_points('rzb.commands')
+            e.name: e.load() for e in entry_points().select(group='rzb.commands')
         }
         super().__init__(*args, **kwds)
 
