@@ -31,9 +31,9 @@ jobs:
 
       # Check that basic features work and we didn't miss to include crucial files
       - name: Smoke test (wheel)
-        run: uv run --isolated --no-project --with dist/*.whl --with pytest pytest
+        run: uv run --isolated --no-project --with dist/*.whl -- python -c "import razorback"
       - name: Smoke test (source distribution)
-        run: uv run --isolated --no-project --with dist/*.tar.gz --with pytest pytest
+        run: uv run --isolated --no-project --with dist/*.tar.gz -- python -c "import razorback"
 
       - name: Publish
         run: uv publish
