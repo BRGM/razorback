@@ -694,11 +694,11 @@ wheels = [
 
 [[package]]
 name = "platformdirs"
-version = "4.5.1"
+version = "4.7.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/cf/86/0248f086a84f01b37aaec0fa567b397df1a119f73c16f6c7a9aac73ea309/platformdirs-4.5.1.tar.gz", hash = "sha256:61d5cdcc6065745cdd94f0f878977f8de9437be93de97c1c12f853c9c0cdcbda", size = 21715, upload-time = "2025-12-05T13:52:58.638Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/71/25/ccd8e88fcd16a4eb6343a8b4b9635e6f3928a7ebcd82822a14d20e3ca29f/platformdirs-4.7.0.tar.gz", hash = "sha256:fd1a5f8599c85d49b9ac7d6e450bc2f1aaf4a23f1fe86d09952fe20ad365cf36", size = 23118, upload-time = "2026-02-12T22:21:53.764Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cb/28/3bfe2fa5a7b9c46fe7e13c97bda14c895fb10fa2ebf1d0abb90e0cea7ee1/platformdirs-4.5.1-py3-none-any.whl", hash = "sha256:d03afa3963c806a9bed9d5125c8f4cb2fdaf74a55ab60e5d59b3fde758104d31", size = 18731, upload-time = "2025-12-05T13:52:56.823Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/e3/1eddccb2c39ecfbe09b3add42a04abcc3fa5b468aa4224998ffb8a7e9c8f/platformdirs-4.7.0-py3-none-any.whl", hash = "sha256:1ed8db354e344c5bb6039cd727f096af975194b508e37177719d562b2b540ee6", size = 18983, upload-time = "2026-02-12T22:21:52.237Z" },
 ]
 
 [[package]]
@@ -712,14 +712,14 @@ wheels = [
 
 [[package]]
 name = "project-toolbox"
-version = "0.1.0"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/5d/16e0475901ac64e17b769c747b5c92fd2c4c445e32488b4d6739a300a8bb/project_toolbox-0.1.0.tar.gz", hash = "sha256:3ab17e55802f2dcd255d7bfa866617e913e14c86410856f9ab0c2d5bfa37e9de", size = 2156, upload-time = "2026-02-11T14:34:09.629Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/fd/c22f4d6f5fb31c551673288f6813bb900e2a0359b2e5db9183752ba081a7/project_toolbox-0.2.1.tar.gz", hash = "sha256:4b0f29f37165c765d6a2c890601091146a8eb8d3e2af8258c0479038769be158", size = 3119, upload-time = "2026-02-12T23:49:54.988Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a4/6b/35fb33e4db8a373a4176c9bf1dc394184ea57fbf8a62ed3a88ef8cfa165b/project_toolbox-0.1.0-py3-none-any.whl", hash = "sha256:326f85acafdc2da53c7d717e32ea7d0b2b36ba617fef12c36010acafe41a763b", size = 3479, upload-time = "2026-02-11T14:34:10.682Z" },
+    { url = "https://files.pythonhosted.org/packages/9d/f2/b1c431a93969b7988ec241a3403e743f085970cfe8d4c7f31358f4ada9f0/project_toolbox-0.2.1-py3-none-any.whl", hash = "sha256:d003bacd053730cc9ae51f560997533694142f841f4cb681f2388eed36f59ef5", size = 4836, upload-time = "2026-02-12T23:49:55.629Z" },
 ]
 
 [[package]]
@@ -889,7 +889,7 @@ wheels = [
 
 [[package]]
 name = "razorback"
-version = "0.5.1"
+version = "0.5.2"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -922,7 +922,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "ipython", specifier = ">=9.10.0" },
-    { name = "project-toolbox" },
+    { name = "project-toolbox", specifier = ">=0.2.1" },
     { name = "pytest", specifier = ">=9.0.2" },
 ]
 doc = [
