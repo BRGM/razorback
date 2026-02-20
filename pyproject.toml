@@ -10,7 +10,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 readme = "README.md"
-version = "0.5.2"
+version = "0.5.3.dev1"
 requires-python = ">=3.12"
 dependencies = [
     "numpy<2",
@@ -34,7 +34,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "ipython>=9.10.0",
-    "project-toolbox>=0.2.1",
+    "project-toolbox-default>=0.4.9",
     "pytest>=9.0.2",
 ]
 doc = [

@@ -711,15 +711,15 @@ wheels = [
 ]
 
 [[package]]
-name = "project-toolbox"
-version = "0.2.1"
+name = "project-toolbox-default"
+version = "0.4.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/57/fd/c22f4d6f5fb31c551673288f6813bb900e2a0359b2e5db9183752ba081a7/project_toolbox-0.2.1.tar.gz", hash = "sha256:4b0f29f37165c765d6a2c890601091146a8eb8d3e2af8258c0479038769be158", size = 3119, upload-time = "2026-02-12T23:49:54.988Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/61/78/96e4adb9a789667fb57d6ecc5f5303832cbc6b4b11e807c7bf9e85a56eec/project_toolbox_default-0.4.9.tar.gz", hash = "sha256:25b1dad9d3b286ef24b169cccf308b0f0b87a6d135c584318c6623799d30b3a5", size = 3601, upload-time = "2026-02-20T14:52:57.188Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9d/f2/b1c431a93969b7988ec241a3403e743f085970cfe8d4c7f31358f4ada9f0/project_toolbox-0.2.1-py3-none-any.whl", hash = "sha256:d003bacd053730cc9ae51f560997533694142f841f4cb681f2388eed36f59ef5", size = 4836, upload-time = "2026-02-12T23:49:55.629Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/b4/11f6073a72d7f065173b46a5fb19ec418b6c9ca3404ea3721d1c12c7abee/project_toolbox_default-0.4.9-py3-none-any.whl", hash = "sha256:61cd81821e8d0a673282e6999983c5960400ce58b7703c04b9a41448bc853dff", size = 5796, upload-time = "2026-02-20T14:52:58.081Z" },
 ]
 
 [[package]]
@@ -889,7 +889,7 @@ wheels = [
 
 [[package]]
 name = "razorback"
-version = "0.5.2"
+version = "0.5.3.dev1"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -901,7 +901,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "ipython" },
-    { name = "project-toolbox" },
+    { name = "project-toolbox-default" },
     { name = "pytest" },
 ]
 doc = [
@@ -922,7 +922,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "ipython", specifier = ">=9.10.0" },
-    { name = "project-toolbox", specifier = ">=0.2.1" },
+    { name = "project-toolbox-default", specifier = ">=0.4.9" },
     { name = "pytest", specifier = ">=9.0.2" },
 ]
 doc = [
