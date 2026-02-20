@@ -14,9 +14,9 @@ __all__ = [
 ]
 
 
-ignore_overflow = np.errstate(over='ignore')
-ignore_invalid = np.errstate(invalid='ignore')
-ignore_divide = np.errstate(divide='ignore')
+ignore_overflow = lambda: np.errstate(over='ignore')
+ignore_invalid = lambda: np.errstate(invalid='ignore')
+ignore_divide = lambda: np.errstate(divide='ignore')
 
 
 class Weights(object):
@@ -52,7 +52,7 @@ class Huber(object):
     def __call__(self, it, residual, e, b, invalid_idx):
         x = vnorm(residual)
         scale = mad_scale(x, is_absolute=True)
-        with ignore_invalid:
+        with ignore_invalid():
             result = np.minimum(1, (self._alpha * scale) / x)
         return result
 
@@ -116,7 +116,7 @@ class BoundedInfluenceStep(object):
         A = H(b).dot(dotdiag(_prev['bi_weight'], b))
         h = _prev['bi_weight'] * np.sum(linalg.solve(A, H(b)) * b.T, axis=0).real
         y = _prev['trace_bi_weight'] * h / p
-        with ignore_divide:
+        with ignore_divide():
             hat_weight = _prev['hat_weight'] * expexp(y, self._khi) * expexp(np.log(y), np.log(self._lower))
 
         bi_weight = weight * hat_weight
@@ -157,21 +157,21 @@ def median_absolute_deviation(arr, is_absolute=False):
     if not is_absolute:
         arr = vnorm(arr)
     med = np.nanmedian(arr)
-    with ignore_invalid:
+    with ignore_invalid():
         abs_dev = vnorm(arr - med)
     return np.nanmedian(abs_dev)
 
 
 def expexp(x, a):
     C = np.exp(-a ** 2)
-    with ignore_overflow:
+    with ignore_overflow():
         result = np.exp(C - np.exp(a * (x - a)))
     return result
 
 
 def m_expexp(x, a):
     C = np.exp(-np.exp(-1./a))
-    with ignore_overflow:
+    with ignore_overflow():
         result = (1. - np.exp(-np.exp((x - a) / a))) / C
     return result
 
