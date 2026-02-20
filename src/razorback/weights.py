@@ -14,9 +14,23 @@ __all__ = [
 ]
 
 
-ignore_overflow = np.errstate(over='ignore')
-ignore_invalid = np.errstate(invalid='ignore')
-ignore_divide = np.errstate(divide='ignore')
+class ReusableErrState:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.stack = []
+
+    def __enter__(self):
+        ctx = np.errstate(**self.kwargs)
+        self.stack.append(ctx)
+        return ctx.__enter__()
+
+    def __exit__(self, *args):
+        ctx = self.stack.pop()
+        return ctx.__exit__(*args)
+
+ignore_overflow = ReusableErrState(over='ignore')
+ignore_invalid = ReusableErrState(invalid='ignore')
+ignore_divide = ReusableErrState(divide='ignore')
 
 
 class Weights(object):

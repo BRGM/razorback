@@ -74,7 +74,7 @@ def metronix(filename, sampling_rate, chopper_on_limit=None, version_pattern=Non
     def calibration(table, filename, chopper, alpha_map):
         freq = table[:, 0]
         calib = cal_mp(freq, table[:, 1], table[:, 2])
-        tabuled = scipy.interpolate.interp1d(freq, calib, copy=False)
+        tabuled = scipy.interpolate.interp1d(freq, calib)
 
         vers = version(filename)
         if vers not in alpha_map:
@@ -143,7 +143,7 @@ def phoenix(cts_file, level):
     freq = data[:, 0]
     values = data[:, 2::2] + 1j * data[:, 3::2]
     calibs = [
-        scipy.interpolate.interp1d(freq, values[:, i], copy=False)
+        scipy.interpolate.interp1d(freq, values[:, i])
         for i in range(n)
     ]
     return calibs
