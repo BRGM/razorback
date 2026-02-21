@@ -25,8 +25,8 @@ def transfer_error(outputs, inputs, transfer, invalid_idx):
     https://doi.org/10.1111/j.1365-246X.1986.tb04552.x
 
     """
-    inputs = np.array(inputs, copy=False)
-    outputs = np.array(outputs, copy=False)
+    inputs = np.asarray(inputs)
+    outputs = np.asarray(outputs)
     assert inputs.ndim == 2
     assert outputs.ndim == 2
     assert inputs.shape[1] == outputs.shape[1]
@@ -93,8 +93,8 @@ def transfer_function(
     if not hasattr(invalid_idx[0], '__getitem__'):
         invalid_idx = [invalid_idx] * len(outputs)
 
-    inputs = np.array(inputs, copy=False)
-    outputs = np.array(outputs, copy=False)
+    inputs = np.asarray(inputs)
+    outputs = np.asarray(outputs)
     assert inputs.ndim == 2
     assert outputs.ndim == 2
     assert inputs.shape[1] == outputs.shape[1]
@@ -210,7 +210,7 @@ def m_estimate(
     """
     if invalid_idx is None:
         invalid_idx = []
-    invalid_idx = np.array(invalid_idx, dtype=int, copy=False)
+    invalid_idx = np.asarray(invalid_idx, dtype=int)
 
     # do least square if no weight function
     if weight_func is None:

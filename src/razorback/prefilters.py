@@ -41,6 +41,8 @@ class CoefficientOfDeterminationFilter(object):
         A = np.einsum("ilj,ilk->ijk", yc, y)
         b = np.einsum("ikj,ik->ij", yc, x)
         z = np.linalg.solve(A, b)
+        # z = np.linalg.solve(A, b[..., None])
+        # z = z.squeeze(axis=-1)
         residual = np.einsum("ijk,ik->ij", y, z) - x
         norm2 = lambda arr: np.sum(np.abs(arr) ** 2, axis=1)
         res = np.sqrt(1 - norm2(residual) / norm2(x))
