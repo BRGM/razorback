@@ -6,10 +6,10 @@ try:
 except ModuleNotFoundError:
     plus = None
 
+
 try:
-    from . import _version
-    __version__ = _version.version
-except ImportError:
+    __version__ = __import__('importlib.metadata').metadata.version(__name__)
+except:
     __version__ = None
 
 

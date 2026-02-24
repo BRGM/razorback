@@ -389,7 +389,7 @@ def apply_prefilter(outputs, inputs, prefilter, invalid_idx):
 
     res = [np.union1d(ivid, prefilter(line, np.transpose(inputs)))
             for line, ivid in zip(outputs, invalid_idx)]
-    return [np.array(e, dtype=int, copy=False) for e in res]
+    return [np.asarray(e, dtype=int) for e in res]
 
 
 def transfer_function_real_prob(outputs, inputs, **kwargs):
@@ -433,8 +433,8 @@ def compute_prefilter(data, freq, prefilter, remote=None, fourier_opts=None):
 
     c_in, (Nw, Lw, shift) = inputs.fourier_coefficients(freq, **fourier_opts)
     c_out, (Nw, Lw, shift) = outputs.fourier_coefficients(freq, **fourier_opts)
-    c_in = np.array(c_in, copy=False)
-    c_out = np.array(c_out, copy=False)
+    c_in = np.asarray(c_in)
+    c_out = np.asarray(c_out)
 
     filter_value = np.array([prefilter.value(line, c_in.T) for line in c_out])
     times = (shift * np.arange(Nw) + 0.5 * Lw) /data.sampling_rate + data.start
