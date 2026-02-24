@@ -17,6 +17,8 @@ dependencies = [
     "scipy",
     "dask[array]",
     "click",
+    "setuptools<82",
+    "mth5[obspy]>=0.6.4",
 ]
 
 [project.urls]
