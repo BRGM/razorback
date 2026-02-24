@@ -26,6 +26,10 @@ class SuppressLogs:
         logger.remove(self.handler_id)
         logger.add(sys.stderr, level=self._previous_level)
         
+def clean_whitespace(separator):
+    def clean_field(string):
+        return string.replace(" ", separator)
+    return clean_field
         
 def load_mth5(filename, tag_template, clean_field, calibrations=None):
     """ 
