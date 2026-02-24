@@ -35,10 +35,32 @@ def clean_whitespace(separator):
     return clean_field
 
 
-def load_mth5(filename, tag_template, clean_field, calibrations=None):
+def load_mth5(filename, tag_template, clean_field=None):
     """
     return a SignalSet iterable from mth5 file
+
+    Parameters
+    ----------
+    filename: str | Path
+        path to the mth5 file
+    tag_template: str
+        template string for generating tags
+        the fields used for the template are:
+            - survey
+            - station
+            - channel
+    clean_field: function
+        a function that takes a string and returns a string
+        use to clean the fields before passing to tag_template
+
+    Yields
+    ------
+    razorback.SignalSet
+        each SignalSet contains one channel of one station of one survey.
     """
+    # TODO add calibrations
+    if clean_field is None:
+        clean_field = lambda e: e
     with MTH5().open_mth5(filename, mode="r") as m:
         survey = m.survey_group
         for station_id in survey.stations_group.groups_list:
@@ -64,6 +86,5 @@ def load_mth5(filename, tag_template, clean_field, calibrations=None):
                         ],
                         channel.sample_rate,
                         datetime.datetime.fromisoformat(str(channel.start)).timestamp(),
-                        calibrations,
                     )
                     yield rb.SignalSet(tags, signals)
