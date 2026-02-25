@@ -47,3 +47,33 @@ def test_small_template():
         'test2_hy',
         'test2_hz',
     }
+
+
+def test_other_template():
+    feed = load_mth5(
+        HERE / "data/synthetic_test_data.h5",
+        "/survey={survey}/station={station}/channel={channel}/",
+    )
+    inv = Inventory(feed)
+    assert inv.filter("*/station=test1/*").tags == {
+        '/survey=EMTF Synthetic/station=test1/channel=ex/',
+        '/survey=EMTF Synthetic/station=test1/channel=ey/',
+        '/survey=EMTF Synthetic/station=test1/channel=hx/',
+        '/survey=EMTF Synthetic/station=test1/channel=hy/',
+        '/survey=EMTF Synthetic/station=test1/channel=hz/',
+    }
+    assert inv.filter("*/channel=e*/*").tags == {
+        '/survey=EMTF Synthetic/station=test1/channel=ex/',
+        '/survey=EMTF Synthetic/station=test1/channel=ey/',
+        '/survey=EMTF Synthetic/station=test2/channel=ex/',
+        '/survey=EMTF Synthetic/station=test2/channel=ey/',
+    }
+    assert inv.filter("*/station=test1/*").filter("*/channel=e*/*").tags == {
+        '/survey=EMTF Synthetic/station=test1/channel=ex/',
+        '/survey=EMTF Synthetic/station=test1/channel=ey/',
+    }
+    assert inv.filter("*/station=test2/channel=h*/*").tags == {
+        '/survey=EMTF Synthetic/station=test2/channel=hx/',
+        '/survey=EMTF Synthetic/station=test2/channel=hy/',
+        '/survey=EMTF Synthetic/station=test2/channel=hz/',
+    }

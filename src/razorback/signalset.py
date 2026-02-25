@@ -61,7 +61,6 @@ class TagsBase(MutableMapping):
 
     def __setitem__(self, key, value):
         assert isinstance(key, basestring)
-        assert key[:1].isalpha()
         value = _tupleit(value)
         assert value, "at least one index must be given"
         if not all(v in self.indices for v in value):
