@@ -3,8 +3,6 @@
 
 
 import numpy as np
-from scipy import signal
-import dask.array as da
 
 
 __all__ = ['time_to_freq', 'slepian_window']
@@ -53,6 +51,8 @@ def time_to_freq(data, sampling_freq, freq, Nper, overlap, window=None, compute=
         shift: index shift beetwen windows
 
     """
+    import dask.array as da
+
     length = set(len(e) for e in data)
     assert len(length) == 1, "all data must have the same length"
     Ntot = length.pop()
@@ -120,6 +120,7 @@ def slepian(N, tau, N_MAX=1000):
     ##  the factor 4 is here to get the half band width
     ##  scipy 1.1 introduce signal.windows.dpss which is more standard
 
+    from scipy import signal
 
     if N <= N_MAX:
         res = signal.windows.dpss(N, tau)

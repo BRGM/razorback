@@ -1,4 +1,5 @@
 import numpy as np
+import razorback.prefilters
 import razorback as rzb
 from test_impedance import make_data
 

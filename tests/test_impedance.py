@@ -1,4 +1,5 @@
 import numpy as np
+import razorback.weights
 import razorback as rzb
 
 

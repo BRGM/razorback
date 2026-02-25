@@ -53,6 +53,7 @@ def path(ctx, create):
 
 
 def path_action(ctx, target):
+    import razorback.data
     if not ctx.obj['create']:
         click.echo(rzb.data.data_path(target))
     else:

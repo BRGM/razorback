@@ -1,4 +1,3 @@
-from mth5.mth5 import MTH5
 import razorback as rb
 import datetime
 import h5py
@@ -58,6 +57,7 @@ def load_mth5(filename, tag_template, clean_field=None):
     razorback.SignalSet
         each SignalSet contains one channel of one station of one survey.
     """
+    from mth5.mth5 import MTH5
     # TODO add calibrations
     if clean_field is None:
         clean_field = lambda e: e

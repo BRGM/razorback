@@ -2,6 +2,7 @@ import datetime
 import dask.array as da
 import numpy as np
 
+import razorback.io
 import razorback as rzb
 
 

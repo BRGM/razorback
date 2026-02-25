@@ -8,7 +8,6 @@ import itertools
 from collections import namedtuple
 
 import numpy as np
-import dask.array as da
 
 
 __all__ = []
@@ -23,6 +22,7 @@ def to_dask_array(array_proxy, name=None, **kwds):
     to control the maximum chunk size.
 
     """
+    import dask.array as da
     return da.from_array(array_proxy, chunks="auto", name=name, fancy=False, **kwds)
 
 
