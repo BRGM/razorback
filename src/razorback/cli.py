@@ -78,4 +78,5 @@ def path_base(ctx):
 def path_metronix(ctx):
     """ Current path for Metronix calibration files.
     """
+    import razorback.calibrations
     path_action(ctx, rzb.calibrations.METRONIX_DATA_PATH)
