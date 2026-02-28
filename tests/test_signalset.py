@@ -5,7 +5,7 @@ from razorback.signalset import Tags, SyncSignal, SignalSet
 
 @pytest.fixture
 def tags():
-    return Tags(a=0, b=1, c=2, BC=(1, 2))
+    return Tags(dict(a=0, b=1, c=2, BC=(1, 2)))
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def three_signals(tags, data):
     sy3 = SyncSignal(10*data, 1.0, start=20)
 
     s1 = tags | sy1
-    s2 = Tags(a=2, b=0, c=1, BC=(0, 1)) | sy2
+    s2 = Tags(dict(a=2, b=0, c=1, BC=(0, 1))) | sy2
     s3 = SignalSet(tags, sy3)
 
     return s1, s2, s3
@@ -30,7 +30,7 @@ def three_signals(tags, data):
 def test_base(tags, data, three_signals):
     s1, s2, s3 = three_signals
 
-    s = Tags(a=0, b=1, c=2) | SyncSignal(data, 1.0)
+    s = Tags(dict(a=0, b=1, c=2)) | SyncSignal(data, 1.0)
     s.tags.BC = 1, 2
     a = s.select_channels([2, 0])
 
@@ -56,19 +56,19 @@ def test_indexing(tags, three_signals):
 
     sa = ss['a']
     assert np.all(sa.intervals == ss.intervals)
-    assert sa.tags == Tags(1, a=0)
+    assert sa.tags == Tags(dict(a=0), size=1)
 
     sb = ss['b']
     assert np.all(sb.intervals == ss.intervals)
-    assert sb.tags == Tags(1, b=0)
+    assert sb.tags == Tags(dict(b=0), size=1)
 
     sbc = ss[['b', 'c']]
     assert np.all(sbc.intervals == ss.intervals)
-    assert sbc.tags == Tags(2, b=0, c=1, BC=(0, 1))
+    assert sbc.tags == Tags(dict(b=0, c=1, BC=(0, 1)), size=2)
 
     sb2 = ss[['b', 2]]
     assert np.all(sb2.intervals == ss.intervals)
-    assert sb2.tags == Tags(2, b=0, c=1, BC=(0, 1))
+    assert sb2.tags == Tags(dict(b=0, c=1, BC=(0, 1)), size=2)
 
     assert ss[:].tags == ss.tags
 
@@ -84,7 +84,7 @@ def test_indexing(tags, three_signals):
     channels = fnmatch.filter(ss.tags, '[bc]')
     sbc = ss[channels]
     assert np.all(sbc.intervals == ss.intervals)
-    assert sbc.tags == Tags(2, b=0, c=1, BC=(0, 1))
+    assert sbc.tags == Tags(dict(b=0, c=1, BC=(0, 1)), size=2)
 
 
 def test_simple_fourier():
@@ -94,7 +94,7 @@ def test_simple_fourier():
     x = np.cos(t*2*np.pi)
     y = np.sin(t*2*np.pi)
 
-    tags = Tags(x=0, y=1)
+    tags = Tags(dict(x=0, y=1))
     sy = SyncSignal([x, y], 1/dt)
     sig = tags | sy
     sigc = tags | sy.extract_i(0, 15) | sy.extract_i(15-1, 30)

@@ -2,10 +2,8 @@
 """
 
 
-import warnings
 import itertools
 from collections import Counter
-from collections.abc import MutableMapping
 from functools import reduce
 from datetime import datetime
 import fnmatch
@@ -18,12 +16,6 @@ from .fourier_transform import time_to_freq
 __all__ = ['SignalSet', 'SyncSignal', 'Tags', 'Inventory']
 
 
-try:
-    basestring
-except NameError:
-    basestring = str
-
-
 def _tupleit(value):
     try:
         return tuple(value)
@@ -31,85 +23,26 @@ def _tupleit(value):
         return (value,)
 
 
-class TagsBase(MutableMapping):
-    " Base class for Tags "
-    def __init__(self, indices, dct):
-        self.__dict__.update(_tags={}, _indices=frozenset(indices))
-        self.update(dct)
-
-    @property
-    def indices(self):
-        return self._indices
-
-    def __eq__(self, other):
-        return (self._tags == getattr(other, '_tags', None)
-                and self.indices == getattr(other, 'indices', None))
-
-    __req__ = __eq__
-
-    def __iter__(self):
-        return iter(self._tags)
-
-    def __len__(self):
-        return len(self._tags)
-
-    def __delitem__(self, key):
-        del self._tags[key]
-
-    def __getitem__(self, key):
-        return self._tags[key]
-
-    def __setitem__(self, key, value):
-        assert isinstance(key, basestring)
-        value = _tupleit(value)
-        assert value, "at least one index must be given"
-        if not all(v in self.indices for v in value):
-            msg = "values %s should be in indices %s"
-            raise ValueError(msg % (value, self.indices))
-        self._tags[key] = value
-
-    def __getattribute__(self, name):
-        try:
-            tags = super(TagsBase, self).__getattribute__('_tags')
-        except AttributeError:
-            tags = None
-        if tags and (name in tags):
-            return tags[name]
-        return super(TagsBase, self).__getattribute__(name)
-
-    def __setattr__(self, name, value):
-        if name.startswith('_') or name in ['indices']:
-            return super(TagsBase, self).__setattr__(name, value)
-        self[name] = value
-
-    def __delattr__(self, name):
-        try:
-            del self[name]
-        except KeyError:
-            super(TagsBase, self).__delattr__(name)
-
-
-class Tags(TagsBase):
+class Tags:
     """
-    Tags(n, name1=idx1, name2=idx2, ...)
-    Tags(name1=idx1, name2=idx2, ...)
+    Tags(data)
+    Tags(data, size=n)
 
     Tags handle mappings between names and groups of indices.
 
-    A Tags object behaves like a dict but its keys must be legal string names
-    and its values are tuples of integers in a fixed range.
-    New entries of a Tags object are converted in tuples if needed
-    then their content is checked to belong in the fixed range.
+    `data`: { str: int | tuple[int] }
+        a dict whose keys are strings and the values are integers or tuples of integers.
+        keys are the tags and integers are the corresponding indices.
 
-    Item access can be emulated through attribute access:
+    `size`: integer | None
+        the size of the index range.
+        if None, `size` is deduced from `data` values.
 
-      - tags.name1         -->  tags['name1']
-      - tags.name1 = idx1  -->  tags['name1'] = idx1
+    A Tags object behaves like a read-only dict with a few extra features.
 
+    Tags implements the union (|) operator against SyncSignal object to produce SignalSet objects.
 
-    Tags also implements the union (|) operator according to the SignalSet class:
-
-      - tags | signal  ->  SignalSet(tags, signal)
+      - tags | sync_signal  ->  SignalSet(tags, sync_signal)
 
 
     See Also
@@ -117,29 +50,66 @@ class Tags(TagsBase):
     SignalSet
 
     """
-    def __init__(self, n=None, **dct):
-        if n is None:
-            idx = sum(map(_tupleit, dct.values()), ())
-            n = (1 + max(idx)) if idx else 0
-        super(Tags, self).__init__(range(n), dct)
+    def __init__(self, data, *, size=None):
+        data = {k: _tupleit(v) for k, v in data.items()}
+        assert all(data.values()), "at least one index per tag must be provided"
+        assert all(isinstance(k, str) for k in data.keys())
+        if size is None:
+            idx = sum(data.values(), ())
+            size = (1 + max(idx)) if idx else 0
+        else:
+            indices = range(size)
+            assert all(i in indices for v in data.values() for i in v), f"indices must be in range({size})"
+        assert size >= 0
+        self._data = data
+        self._size = size
+
+    @property
+    def size(self):
+        return self._size
+
+    @property
+    def indices(self):
+        return set(range(self._size))
 
     def __or__(self, signal):
         return SignalSet(self, signal)
 
     def __repr__(self):
-        items = sorted(self.items(), key=lambda x: (len(x[1]), x[0]))
-        tags = ', '.join('%s=%s' % e for e in items)
-        return '%s(%s, %s)' % (type(self).__name__, len(self.indices), tags)
+        return f"{type(self).__name__}({self._data}, size={self.size})"
 
-    def __str__(self):
-        return str(self._tags)
-
-    # filter = fnmatch.filter
     def filter(self, *patterns):
+        """ use fnmatch.filter to select some tags
+        """
         return tuple(set().union(*(fnmatch.filter(self, p) for p in patterns)))
 
-    def filter_get(self, *patterns):
-        return tuple(sorted(set().union(*(map(self.get, self.filter(*patterns))))))
+    def __eq__(self, other):
+        return (
+            isinstance(other, Tags)
+            and self._size == other._size
+            and self._data == other._data
+        )
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
+    def get(self, key, default=None):
+        return self._data.get(key, default)
+
+    def items(self):
+        return self._data.items()
+
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
 
 
 class SignalSet(object):
@@ -408,7 +378,7 @@ class SignalSet(object):
         if n and vidx is not None and not set(vidx).issubset(range(n)):
             msg = "incompatible tags"
             raise ValueError(msg)
-        self._tags = Tags(n or None, **value)
+        self._tags = Tags(value, size=n or None)
 
     def select_channels(self, channels):
         """ return a SignalSet containing the selected channels
@@ -425,7 +395,7 @@ class SignalSet(object):
             channels = tuple(self.tags[channels])
         elif isinstance(channels, slice):
             channels = tuple(range(self.nb_channels)[channels])
-        elif isinstance(channels, basestring):
+        elif isinstance(channels, str):
             raise ValueError(msg % channels)
         else:
             channels = _tupleit(channels)
@@ -444,7 +414,7 @@ class SignalSet(object):
         keep = set(indices).issuperset
         tags = {k: map(idxmap.get, _tupleit(v))
                 for k, v in self.tags.items() if keep(v)}
-        tags = Tags(len(indices), **tags)
+        tags = Tags(tags, size=len(indices))
         signals = [s.select(*indices) for s in self.signals]
         return SignalSet(tags, *signals)
 
@@ -498,7 +468,7 @@ class SignalSet(object):
         shift, N = shift[:-1], shift[-1]
         tags = {t: [i+c for i in ii] for c, s in zip(shift, seqs)
                                      for t, ii in s.tags.items()}
-        tags = Tags(N, **tags)
+        tags = Tags(tags, size=N)
 
         def rec(d, f, seq):
             "recursively find common intervals"

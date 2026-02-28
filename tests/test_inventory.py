@@ -14,9 +14,9 @@ def test_simple():
     sync = lambda t0, t1, rate=1, n=1: SyncSignal([np.arange(1+(t1-t0)*rate)]*n, rate, t0)
 
     inv = Inventory([
-        Tags(4, Ex1=0, Ey1=1, Hx1=2, Hy1=3, E1=(0, 1), H1=(2, 3)) | sync(0, 20, n=4),
-        Tags(2, Hx2=0, Hy2=1, H2=(0, 1)) | sync(10, 20, n=2),
-        Tags(4, Ex2=0, Ey2=1, Hx2=2, Hy2=3, E2=(0, 1), H2=(2, 3)) | sync(20, 30, n=4),
+        Tags(dict(Ex1=0, Ey1=1, Hx1=2, Hy1=3, E1=(0, 1), H1=(2, 3)), size=4) | sync(0, 20, n=4),
+        Tags(dict(Hx2=0, Hy2=1, H2=(0, 1)), size=2) | sync(10, 20, n=2),
+        Tags(dict(Ex2=0, Ey2=1, Hx2=2, Hy2=3, E2=(0, 1), H2=(2, 3)), size=4) | sync(20, 30, n=4),
     ])
 
 
